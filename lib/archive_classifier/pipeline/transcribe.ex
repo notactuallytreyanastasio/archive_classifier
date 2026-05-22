@@ -120,6 +120,7 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
         }
       end)
       |> Enum.reject(fn entry -> entry.text == "" end)
+      |> Enum.reject(fn entry -> is_nil(entry.start_time) or is_nil(entry.end_time) end)
       |> Dedup.merge_consecutive()
 
     filtered = length(chunks) - length(entries)

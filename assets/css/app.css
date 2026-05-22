@@ -103,3 +103,486 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* ============================================
+   RETRO OS WINDOW STYLES
+   Win95/OSX window chrome + Mac System 7 content
+   ============================================ */
+
+/* Base window container */
+.os-window {
+  margin: 20px auto;
+  max-width: 95vw;
+  box-sizing: border-box;
+}
+
+/* ---- WINDOWS 95 WINDOW ---- */
+.os-window-win95 {
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  box-shadow: 1px 1px 0 #000;
+  font-family: "MS Sans Serif", "Tahoma", sans-serif;
+  font-size: 11px;
+}
+
+.os-window-win95 .os-titlebar {
+  height: 18px;
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
+}
+
+.os-window-win95 .os-titlebar-title {
+  flex: 1;
+  color: #fff;
+  font-weight: bold;
+  font-size: 11px;
+  padding-left: 4px;
+  text-shadow: none;
+}
+
+.os-window-win95 .os-titlebar-buttons {
+  display: flex;
+  gap: 2px;
+}
+
+.os-window-win95 .os-btn {
+  width: 16px;
+  height: 14px;
+  background: #c0c0c0;
+  border: 1px outset #c0c0c0;
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #000;
+}
+
+.os-window-win95 .os-btn:active {
+  border: 1px inset #c0c0c0;
+}
+
+.os-window-win95 .os-menubar {
+  background: #c0c0c0;
+  border-bottom: 1px solid #808080;
+  padding: 2px 4px;
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+}
+
+.os-window-win95 .os-menubar span:hover {
+  background: #000080;
+  color: #fff;
+}
+
+.os-window-win95 .os-content {
+  background: #c0c0c0;
+  border: 2px inset #c0c0c0;
+  margin: 2px;
+  min-height: 200px;
+}
+
+.os-window-win95 .os-statusbar {
+  height: 20px;
+  background: #c0c0c0;
+  border-top: 1px solid #808080;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 11px;
+}
+
+.os-window-win95 .os-statusbar-section {
+  border: 1px inset #c0c0c0;
+  padding: 0 8px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+}
+
+/* ---- MAC OS X AQUA WINDOW ---- */
+.os-window-osx {
+  background: linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%);
+  border: 1px solid #888;
+  border-radius: 6px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8);
+  font-family: "Lucida Grande", "Helvetica Neue", "Helvetica", sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.os-window-osx .os-titlebar {
+  height: 22px;
+  background: linear-gradient(180deg, #e8e8e8 0%, #c8c8c8 100%);
+  border-bottom: 1px solid #aaa;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.os-window-osx .os-titlebar-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.os-window-osx .os-btn-close {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(180deg, #ff6058 0%, #e2473f 100%);
+  border: 1px solid #cf3a32;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.os-window-osx .os-btn-close:hover {
+  background: linear-gradient(180deg, #ff7b74 0%, #e2574f 100%);
+}
+
+.os-window-osx .os-btn-min {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(180deg, #ffbd2e 0%, #e09c1f 100%);
+  border: 1px solid #c98a1c;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.os-window-osx .os-btn-max {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(180deg, #28ca42 0%, #1aab32 100%);
+  border: 1px solid #14962b;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.os-window-osx .os-titlebar-title {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+
+.os-window-osx .os-toolbar {
+  background: linear-gradient(180deg, #e8e8e8 0%, #d8d8d8 100%);
+  border-bottom: 1px solid #b8b8b8;
+  padding: 4px 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.os-window-osx .os-toolbar-btn {
+  background: linear-gradient(180deg, #f0f0f0 0%, #d8d8d8 100%);
+  border: 1px solid #a0a0a0;
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.os-window-osx .os-toolbar-btn:hover {
+  background: linear-gradient(180deg, #e8e8e8 0%, #c8c8c8 100%);
+}
+
+.os-window-osx .os-toolbar-btn:active {
+  background: linear-gradient(180deg, #d0d0d0 0%, #b8b8b8 100%);
+}
+
+.os-window-osx .os-content {
+  background: #fff;
+  min-height: 200px;
+}
+
+/* ---- DESKTOP BACKGROUNDS ---- */
+.os-desktop-win95 {
+  background: #008080;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.os-desktop-mac {
+  background: repeating-linear-gradient(
+    0deg,
+    #a8a8a8,
+    #a8a8a8 1px,
+    #b8b8b8 1px,
+    #b8b8b8 2px
+  );
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.os-desktop-osx {
+  background: linear-gradient(180deg, #4a90d9 0%, #1c5ba5 50%, #0d4a8a 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Utility: inner content padding */
+.os-content-padded {
+  padding: 16px;
+}
+
+/* ---- MAC SYSTEM 7 CONTENT STYLING ---- */
+
+.mac-input {
+  font-family: "Chicago", "Geneva", "Helvetica", sans-serif;
+  font-size: 12px;
+  padding: 4px 6px;
+  border: 2px inset #fff;
+  background: #fff;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.mac-input:focus {
+  outline: 1px solid #000;
+}
+
+.mac-btn {
+  font-family: "Chicago", "Geneva", "Helvetica", sans-serif;
+  font-size: 12px;
+  padding: 4px 16px;
+  border: 2px outset #ddd;
+  background: #ddd;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mac-btn:active {
+  border-style: inset;
+}
+
+.mac-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mac-btn-primary {
+  border-color: #000;
+  background: #fff;
+  font-weight: bold;
+  box-shadow: 2px 2px 0 #000;
+}
+
+.mac-btn-primary:active {
+  box-shadow: none;
+  border-style: inset;
+}
+
+.mac-btn-danger {
+  border-color: #900;
+  background: #fff;
+  color: #900;
+}
+
+.mac-card {
+  background: #fff;
+  border: 1px solid #000;
+  box-shadow: 2px 2px 0 #000;
+}
+
+.mac-card:hover {
+  background: #f0f0f0;
+}
+
+.mac-select {
+  font-family: "Chicago", "Geneva", "Helvetica", sans-serif;
+  font-size: 12px;
+  padding: 3px 6px;
+  border: 2px inset #fff;
+  background: #fff;
+  outline: none;
+}
+
+.mac-badge {
+  font-family: "Geneva", "Helvetica", sans-serif;
+  font-size: 10px;
+  padding: 1px 6px;
+  border: 1px solid #000;
+  background: #ddd;
+}
+
+.mac-badge-pending {
+  background: #ddd;
+  color: #333;
+}
+
+.mac-badge-queued {
+  background: #ffd;
+  border-color: #990;
+  color: #660;
+}
+
+.mac-badge-classifying {
+  background: #ddf;
+  border-color: #009;
+  color: #006;
+}
+
+.mac-badge-classified {
+  background: #dfd;
+  border-color: #090;
+  color: #060;
+}
+
+.mac-badge-failed {
+  background: #fdd;
+  border-color: #900;
+  color: #600;
+}
+
+.mac-tag {
+  font-family: "Geneva", "Helvetica", sans-serif;
+  font-size: 9px;
+  padding: 1px 4px;
+  border: 1px solid #999;
+  background: #eee;
+  display: inline-block;
+  margin: 0 2px 2px 0;
+}
+
+.mac-divider {
+  border: none;
+  border-top: 1px solid #000;
+  margin: 4px 0;
+}
+
+.mac-link {
+  color: #000;
+  text-decoration: underline;
+  font-family: "Chicago", "Geneva", "Helvetica", sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mac-link:hover {
+  color: #333;
+}
+
+.mac-header {
+  font-family: "Chicago", "Geneva", "Helvetica", sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: #000;
+}
+
+.mac-subtext {
+  font-family: "Geneva", "Helvetica", sans-serif;
+  font-size: 11px;
+  color: #333;
+}
+
+.mac-text {
+  font-family: "Geneva", "Helvetica", sans-serif;
+  font-size: 12px;
+  color: #000;
+}
+
+.mac-info-box {
+  background: #fff;
+  border: 1px solid #000;
+  padding: 8px 12px;
+  font-family: "Geneva", "Helvetica", sans-serif;
+  font-size: 12px;
+}
+
+.mac-scroll-list {
+  border: 2px inset #fff;
+  background: #fff;
+  overflow-y: auto;
+}
+
+.mac-progress-bar {
+  height: 16px;
+  border: 1px solid #000;
+  background: #fff;
+  position: relative;
+}
+
+.mac-progress-fill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    #000 0px, #000 4px,
+    #fff 4px, #fff 6px
+  );
+  transition: width 0.5s ease;
+}
+
+/* Mac-styled slider */
+.mac-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: #999;
+  outline: none;
+}
+
+.mac-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #c0c0c0;
+  border: 1px solid #000;
+  cursor: pointer;
+}
+
+/* Tooltip - Mac System 7 style */
+.mac-tooltip {
+  background: #ffc;
+  border: 1px solid #000;
+  box-shadow: 1px 1px 0 #000;
+  font-family: "Geneva", "Helvetica", sans-serif;
+  font-size: 11px;
+  color: #000;
+  padding: 4px 8px;
+}
+
+/* Collection grid card image area */
+.mac-thumb {
+  border-bottom: 1px solid #000;
+  background: #808080;
+}
+
+/* Empty state */
+.mac-empty {
+  font-family: "Geneva", "Helvetica", sans-serif;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  padding: 32px;
+}
+
+/* Segment list button */
+.mac-segment {
+  font-family: "Geneva", "Helvetica", sans-serif;
+  font-size: 12px;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.mac-segment:hover {
+  background: #eee;
+}
+
+.mac-timestamp {
+  font-family: "Monaco", "Courier", monospace;
+  font-size: 10px;
+  background: #ddd;
+  border: 1px solid #999;
+  padding: 1px 4px;
+}
+
+/* Show tooltip on card hover */
+.mac-card:hover .mac-tooltip {
+  opacity: 1 !important;
+  visibility: visible !important;
+}

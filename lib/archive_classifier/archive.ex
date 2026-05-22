@@ -138,19 +138,25 @@ defmodule ArchiveClassifier.Archive do
 
   def search_videos_fts(query) do
     tsquery = to_tsquery(query)
+    ilike_term = "%#{query}%"
 
-    # Videos matching in title/description
+    # Videos matching in title/description (FTS + ILIKE fallback)
     video_ids_from_metadata =
       from(v in Video,
-        where: fragment("? @@ to_tsquery('english', ?)", v.search_vector, ^tsquery),
+        where:
+          fragment("? @@ to_tsquery('english', ?)", v.search_vector, ^tsquery) or
+            ilike(v.title, ^ilike_term) or
+            ilike(v.description, ^ilike_term),
         select: v.id
       )
       |> Repo.all()
 
-    # Videos matching in transcript content
+    # Videos matching in transcript content (FTS + ILIKE fallback)
     video_ids_from_transcripts =
       from(t in ArchiveClassifier.Classification.Transcript,
-        where: fragment("? @@ to_tsquery('english', ?)", t.search_vector, ^tsquery),
+        where:
+          fragment("? @@ to_tsquery('english', ?)", t.search_vector, ^tsquery) or
+            ilike(t.text, ^ilike_term),
         select: t.video_id,
         distinct: true
       )

@@ -48,16 +48,16 @@ defmodule ArchiveClassifierWeb.SearchLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
-      <div class="max-w-4xl mx-auto px-4 py-8">
-        <header class="mb-6">
-          <h1 class="text-2xl font-semibold text-gray-900">Transcript Search</h1>
-          <p class="mt-1 text-sm text-gray-500">
-            Search spoken words across all transcribed videos. Results link to the exact timestamp.
+    <Layouts.app flash={@flash} page_title="Transcript Search">
+      <div class="os-content-padded" style="background: #ddd;">
+        <header style="margin-bottom: 12px;">
+          <h1 class="mac-header">Transcript Search</h1>
+          <p class="mac-subtext" style="margin-top: 2px;">
+            Search spoken words across all transcribed videos.
           </p>
         </header>
 
-        <form phx-change="search" class="mb-8">
+        <form phx-change="search" style="margin-bottom: 12px;">
           <input
             type="text"
             name="q"
@@ -65,49 +65,53 @@ defmodule ArchiveClassifierWeb.SearchLive do
             placeholder="Search transcripts..."
             phx-debounce="300"
             autofocus
-            class="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="mac-input"
+            style="width: 100%; padding: 6px 8px; font-size: 14px;"
             id="transcript-search"
           />
         </form>
 
-        <div :if={@query != "" && @results == []} class="text-center py-12 text-gray-400">
+        <div :if={@query != "" && @results == []} class="mac-empty">
           No transcript matches found.
         </div>
 
-        <div :if={@results != []} class="space-y-4">
-          <p class="text-sm text-gray-500 mb-4">{length(@results)} matches</p>
+        <div :if={@results != []}>
+          <p class="mac-subtext" style="margin-bottom: 8px;">{length(@results)} matches</p>
 
-          <div
-            :for={result <- @results}
-            class="p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
-          >
-            <div class="flex items-start gap-4">
-              <img
-                src={"/thumbnails/#{result.video_id}"}
-                class="w-20 h-14 object-cover rounded bg-gray-100 shrink-0"
-                loading="lazy"
-              />
-              <div class="flex-1 min-w-0">
-                <h3 class="text-sm font-semibold text-gray-900">
-                  {String.trim(result.title)}
-                </h3>
-                <p class="text-xs text-gray-500 mt-0.5">
-                  <span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded">
-                    {format_timestamp(result.start_time)} — {format_timestamp(result.end_time)}
-                  </span>
-                  <span class="ml-2">{result.collection}</span>
-                </p>
-                <p class="text-sm text-gray-700 mt-2 leading-relaxed">
-                  {result.text}
-                </p>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div
+              :for={result <- @results}
+              class="mac-card"
+              style="padding: 8px 10px;"
+            >
+              <div style="display: flex; align-items: start; gap: 8px;">
+                <img
+                  src={"/thumbnails/#{result.video_id}"}
+                  style="width: 72px; height: 50px; object-fit: cover; border: 1px solid #000; background: #808080; flex-shrink: 0;"
+                  loading="lazy"
+                />
+                <div style="flex: 1; min-width: 0;">
+                  <div class="mac-text" style="font-weight: bold; font-size: 11px;">
+                    {String.trim(result.title)}
+                  </div>
+                  <div style="margin-top: 2px;">
+                    <span class="mac-timestamp">
+                      {format_timestamp(result.start_time)} — {format_timestamp(result.end_time)}
+                    </span>
+                    <span class="mac-subtext" style="margin-left: 6px;">{result.collection}</span>
+                  </div>
+                  <div class="mac-text" style="margin-top: 4px; line-height: 1.4;">
+                    {result.text}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div :if={@results == [] && @query == ""} class="text-center py-16 text-gray-300">
-          <p class="text-lg">Type to search across all transcribed videos</p>
-          <p class="text-sm mt-2">Results show the exact timestamp where the words appear</p>
+        <div :if={@results == [] && @query == ""} class="mac-empty" style="padding: 48px 16px;">
+          <div class="mac-text" style="font-size: 14px; color: #666;">Type to search across all transcribed videos</div>
+          <div class="mac-subtext" style="margin-top: 4px;">Results show the exact timestamp where the words appear</div>
         </div>
       </div>
     </Layouts.app>

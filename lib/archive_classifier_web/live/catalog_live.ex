@@ -146,7 +146,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
         </header>
 
         <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-          <form phx-change="search" style="flex: 1;">
+          <form phx-change="search" phx-submit="search" style="flex: 1;">
             <input
               type="text"
               name="search"

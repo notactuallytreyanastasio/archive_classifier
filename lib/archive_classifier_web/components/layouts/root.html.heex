@@ -5,30 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
     <.live_title default="Archive Classifier" suffix="" phx-no-format>{assigns[:page_title]}</.live_title>
+    <meta name="description" content="Search, by dialogue and title/description, 1,371 videos from the Mark Pines Archive.org collection — rare Ron Wood footage, rock history, jazz, rehearsals, and party tapes. AI-transcribed." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="The Mark Pines Archive" />
+    <meta property="og:description" content="Search, by dialogue and title/description, 1,371 videos from Archive.org — rare Ron Wood footage, rock history, jazz, rehearsals, and party tapes. AI-transcribed." />
+    <meta property="og:image" content="https://archive.bobbby.online/images/og-image.png" />
+    <meta property="og:url" content="https://archive.bobbby.online" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="The Mark Pines Archive" />
+    <meta name="twitter:description" content="Search, by dialogue and title/description, 1,371 videos from Archive.org — rare Ron Wood footage, rock history, jazz, rehearsals, and party tapes. AI-transcribed." />
+    <meta name="twitter:image" content="https://archive.bobbby.online/images/og-image.png" />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
-    <script>
-      (() => {
-        const setTheme = (theme) => {
-          if (theme === "system") {
-            localStorage.removeItem("phx:theme");
-            document.documentElement.removeAttribute("data-theme");
-          } else {
-            localStorage.setItem("phx:theme", theme);
-            document.documentElement.setAttribute("data-theme", theme);
-          }
-        };
-        if (!document.documentElement.hasAttribute("data-theme")) {
-          setTheme(localStorage.getItem("phx:theme") || "system");
-        }
-        window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
-        
-        window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
-      })();
-    </script>
+    <style>
+      /* Force light theme for retro look */
+      html { background: #a8a8a8; }
+    </style>
   </head>
-  <body>
+  <body class="os-desktop-mac">
     {@inner_content}
   </body>
 </html>

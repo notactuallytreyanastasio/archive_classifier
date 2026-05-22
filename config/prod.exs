@@ -25,6 +25,7 @@ config :logger, level: :info
 
 # Whisper ML serving — disabled by default in prod, enable via env var
 config :archive_classifier, start_whisper: false
+config :archive_classifier, start_twerker: false
 config :archive_classifier, whisper_model: "openai/whisper-small"
 
 # Runtime production configuration, including reading
