@@ -62,7 +62,9 @@ defmodule Mix.Tasks.ImportArchive do
     entries =
       Enum.map(videos, fn attrs ->
         attrs
-        |> Map.put(:classification_status, "pending")
+        |> Map.put(:archive_id, Map.fetch!(attrs, :id))
+        |> Map.delete(:id)
+        |> Map.put(:classification_status, :pending)
         |> Map.put(:tags, [])
         |> Map.put(:inserted_at, now)
         |> Map.put(:updated_at, now)
@@ -73,7 +75,7 @@ defmodule Mix.Tasks.ImportArchive do
       entries
       |> Enum.chunk_every(100)
       |> Enum.reduce({0, 0}, fn chunk, {total, _} ->
-        {count, _} = Repo.insert_all(Video, chunk, on_conflict: :nothing)
+        {count, _} = Repo.insert_all(Video, chunk, on_conflict: :nothing, conflict_target: :archive_id)
         {total + count, 0}
       end)
 

@@ -8,7 +8,7 @@ defmodule ArchiveClassifier.Archive do
   alias ArchiveClassifier.Archive.Video
   alias ArchiveClassifier.Repo
 
-  @type list_opts :: [search: String.t(), status: String.t(), limit: pos_integer(), offset: non_neg_integer()]
+  @type list_opts :: [search: String.t(), status: Video.status(), limit: pos_integer(), offset: non_neg_integer()]
 
   @doc """
   Lists videos with optional filtering by search term and classification status.
@@ -39,7 +39,7 @@ defmodule ArchiveClassifier.Archive do
   @doc """
   Fetches a single video by ID.
   """
-  @spec get_video!(String.t()) :: Video.t()
+  @spec get_video!(integer()) :: Video.t()
   def get_video!(id), do: Repo.get!(Video, id)
 
   @doc """
@@ -48,7 +48,7 @@ defmodule ArchiveClassifier.Archive do
   @spec queue_for_classification(Video.t()) :: {:ok, Video.t()} | {:error, Ecto.Changeset.t()}
   def queue_for_classification(%Video{} = video) do
     video
-    |> Video.changeset(%{classification_status: "queued"})
+    |> Video.changeset(%{classification_status: :queued})
     |> Repo.update()
   end
 

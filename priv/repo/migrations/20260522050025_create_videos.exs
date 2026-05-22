@@ -2,8 +2,8 @@ defmodule ArchiveClassifier.Repo.Migrations.CreateVideos do
   use Ecto.Migration
 
   def change do
-    create table(:videos, primary_key: false) do
-      add :id, :text, primary_key: true
+    create table(:videos) do
+      add :archive_id, :text, null: false
       add :title, :text, null: false
       add :description, :text
       add :duration, :float
@@ -16,6 +16,7 @@ defmodule ArchiveClassifier.Repo.Migrations.CreateVideos do
       timestamps()
     end
 
+    create unique_index(:videos, [:archive_id])
     create index(:videos, [:classification_status])
     create index(:videos, [:duration])
   end

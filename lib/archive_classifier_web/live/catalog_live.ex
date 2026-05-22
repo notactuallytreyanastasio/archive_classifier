@@ -44,6 +44,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
   end
 
   @impl true
+  # theres a log that could be matched out of the assigns that is expected to already be present here?
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
@@ -51,10 +52,9 @@ defmodule ArchiveClassifierWeb.CatalogLive do
         <header class="mb-8">
           <h1 class="text-2xl font-semibold text-gray-900">Archive Catalog</h1>
           <p class="mt-1 text-sm text-gray-500">
-            {format_number(@stats.total)} videos &middot;
-            {format_number(@stats.pending)} pending &middot;
-            {format_number(@stats.queued)} queued &middot;
-            {format_number(@stats.classified)} classified
+            {format_number(@stats.total)} videos &middot; {format_number(@stats.pending)} pending &middot; {format_number(
+              @stats.queued
+            )} queued &middot; {format_number(@stats.classified)} classified
           </p>
         </header>
 
@@ -105,7 +105,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
               </span>
 
               <button
-                :if={video.classification_status == "pending"}
+                :if={video.classification_status == :pending}
                 phx-click="classify"
                 phx-value-id={video.id}
                 class="text-xs px-3 py-1 bg-gray-900 text-white rounded hover:bg-gray-700 transition-colors"
@@ -137,9 +137,10 @@ defmodule ArchiveClassifierWeb.CatalogLive do
 
   defp format_number(n), do: Integer.to_string(n)
 
-  defp status_class("pending"), do: "bg-gray-100 text-gray-600"
-  defp status_class("queued"), do: "bg-amber-100 text-amber-700"
-  defp status_class("classifying"), do: "bg-blue-100 text-blue-700"
-  defp status_class("classified"), do: "bg-green-100 text-green-700"
+  defp status_class(:pending), do: "bg-gray-100 text-gray-600"
+  defp status_class(:queued), do: "bg-amber-100 text-amber-700"
+  defp status_class(:classifying), do: "bg-blue-100 text-blue-700"
+  defp status_class(:classified), do: "bg-green-100 text-green-700"
+  defp status_class(:failed), do: "bg-red-100 text-red-700"
   defp status_class(_), do: "bg-gray-100 text-gray-600"
 end

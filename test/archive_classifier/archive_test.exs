@@ -6,14 +6,14 @@ defmodule ArchiveClassifier.ArchiveTest do
 
   defp insert_video!(attrs \\ %{}) do
     defaults = %{
-      id: "test_video_#{System.unique_integer([:positive])}",
+      archive_id: "test_video_#{System.unique_integer([:positive])}",
       title: "Test Video",
       description: "A test video description",
       duration: 120.0,
       primary_video_url: "https://archive.org/download/test/test.mp4",
       collection: "markpines",
       files_json: "[]",
-      classification_status: "pending",
+      classification_status: :pending,
       tags: []
     }
 
@@ -54,12 +54,12 @@ defmodule ArchiveClassifier.ArchiveTest do
     end
 
     test "filters by classification status" do
-      insert_video!(%{classification_status: "pending"})
-      insert_video!(%{classification_status: "queued"})
-      insert_video!(%{classification_status: "classified"})
+      insert_video!(%{classification_status: :pending})
+      insert_video!(%{classification_status: :queued})
+      insert_video!(%{classification_status: :classified})
 
-      assert length(Archive.list_videos(status: "pending")) == 1
-      assert length(Archive.list_videos(status: "queued")) == 1
+      assert length(Archive.list_videos(status: :pending)) == 1
+      assert length(Archive.list_videos(status: :queued)) == 1
     end
 
     test "respects limit" do
@@ -86,33 +86,33 @@ defmodule ArchiveClassifier.ArchiveTest do
 
   describe "get_video!/1" do
     test "returns video by id" do
-      video = insert_video!(%{id: "my_test_id"})
+      video = insert_video!()
 
-      assert Archive.get_video!("my_test_id").id == video.id
+      assert Archive.get_video!(video.id).id == video.id
     end
 
     test "raises on not found" do
       assert_raise Ecto.NoResultsError, fn ->
-        Archive.get_video!("nonexistent")
+        Archive.get_video!(-1)
       end
     end
   end
 
   describe "queue_for_classification/1" do
     test "sets status to queued" do
-      video = insert_video!(%{classification_status: "pending"})
+      video = insert_video!(%{classification_status: :pending})
 
       assert {:ok, updated} = Archive.queue_for_classification(video)
-      assert updated.classification_status == "queued"
+      assert updated.classification_status == :queued
     end
   end
 
   describe "stats/0" do
     test "returns counts by status" do
-      insert_video!(%{classification_status: "pending"})
-      insert_video!(%{classification_status: "pending"})
-      insert_video!(%{classification_status: "queued"})
-      insert_video!(%{classification_status: "classified"})
+      insert_video!(%{classification_status: :pending})
+      insert_video!(%{classification_status: :pending})
+      insert_video!(%{classification_status: :queued})
+      insert_video!(%{classification_status: :classified})
 
       stats = Archive.stats()
 
