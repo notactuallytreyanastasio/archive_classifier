@@ -183,8 +183,8 @@ defmodule ArchiveClassifierWeb.CatalogLive do
               />
               <div class="p-3">
                 <h3
-                  class="text-sm font-medium text-gray-900 truncate"
-                  title={String.trim(video.title)}
+                  class="text-sm font-medium text-gray-900"
+                  title={video.description || ""}
                 >
                   {String.trim(video.title)}
                 </h3>
