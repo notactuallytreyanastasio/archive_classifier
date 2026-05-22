@@ -265,7 +265,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
                 </div>
 
                 <hr class="mac-divider" style="margin-top: 6px;" />
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px; flex-wrap: wrap; gap: 4px;">
                   <span class={["mac-badge", status_badge_class(video.classification_status)]}>
                     {video.classification_status}
                   </span>
@@ -280,8 +280,18 @@ defmodule ArchiveClassifierWeb.CatalogLive do
                     Classify
                   </button>
 
-                  <div :if={video.classification_status in [:classified, :failed]} style="display: flex; gap: 4px;">
+                  <div style="display: flex; gap: 4px;">
+                    <a
+                      href={"https://archive.org/details/#{video.archive_id}"}
+                      target="_blank"
+                      class="mac-btn"
+                      style="font-size: 10px; padding: 2px 10px; text-decoration: none; color: #000;"
+                    >
+                      Watch ↗
+                    </a>
+
                     <.link
+                      :if={video.classification_status in [:classified, :failed]}
                       navigate={~p"/videos/#{video.id}/transcript"}
                       class="mac-btn"
                       style="font-size: 10px; padding: 2px 10px; text-decoration: none; color: #000;"
@@ -290,6 +300,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
                     </.link>
 
                     <button
+                      :if={video.classification_status in [:classified, :failed]}
                       phx-click="reclassify"
                       phx-value-id={video.id}
                       class="mac-btn"
