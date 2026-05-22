@@ -1,10 +1,13 @@
 defmodule ArchiveClassifierWeb.TranscriptSearchLive do
   @moduledoc """
-  Per-video transcript viewer with text search.
+  Interactive video explorer with frame scrubbing and transcript search.
 
-  Shows all transcript segments for a classified video, with a search
-  input that filters to matching segments. State is fully URL-encoded:
-  `/videos/:id/transcript?q=guitar`
+  Three interactive zones:
+  1. Frame viewer — hover to scrub through frames, caption shows spoken words
+  2. Timeline slider — drag to any moment, frame + caption follow
+  3. Searchable transcript — click any segment to jump there
+
+  All state URL-encoded: `/videos/:id/transcript?q=guitar`
   """
 
   use ArchiveClassifierWeb, :live_view
@@ -33,11 +36,18 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
       |> select([f], %{id: f.id, timestamp: f.timestamp})
       |> Repo.all()
 
+    # Pre-encode data for JS hook
+    segment_data =
+      Enum.map(all_segments, fn s ->
+        %{start: s.start_time, end: s.end_time, text: s.text}
+      end)
+
     {:ok,
      socket
      |> assign(:video, video)
      |> assign(:all_segments, all_segments)
      |> assign(:frames, frames)
+     |> assign(:segment_data, segment_data)
      |> assign(:page_title, String.trim(video.title))}
   end
 
@@ -61,114 +71,225 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <div class="max-w-4xl mx-auto px-4 py-8">
-        <div class="mb-6">
+      <div class="max-w-5xl mx-auto px-4 py-6">
+        <div class="mb-4">
           <a href="/" class="text-sm text-blue-600 hover:text-blue-800">&larr; Back to catalog</a>
         </div>
 
-        <header class="mb-6 flex items-start gap-4">
-          <img
-            src={"/thumbnails/#{@video.id}"}
-            class="w-24 h-16 object-cover rounded bg-gray-100 shrink-0"
-          />
-          <div>
-            <h1 class="text-xl font-semibold text-gray-900">{String.trim(@video.title)}</h1>
-            <p class="text-sm text-gray-500 mt-0.5">
-              {format_duration(@video.duration)} &middot; {@video.collection} &middot;
-              {length(@all_segments)} segments transcribed
-            </p>
-          </div>
-        </header>
-
-        <%!-- Filmstrip timeline --%>
-        <div :if={@frames != []} class="mb-6">
-          <div
-            id="filmstrip"
-            class="flex gap-0.5 overflow-x-auto pb-2 rounded-lg bg-gray-900 p-2"
-            phx-hook=".Filmstrip"
-            data-segments={Jason.encode!(Enum.map(@all_segments, fn s -> %{start: s.start_time, end: s.end_time, text: s.text} end))}
-          >
+        <%!-- Video explorer --%>
+        <div
+          id="video-explorer"
+          phx-hook=".VideoExplorer"
+          phx-update="ignore"
+          data-frames={Jason.encode!(@frames)}
+          data-segments={Jason.encode!(@segment_data)}
+          data-duration={@video.duration || 0}
+        >
+          <%!-- Frame viewer --%>
+          <div class="relative bg-black rounded-lg overflow-hidden cursor-crosshair" id="frame-container">
             <img
-              :for={frame <- @frames}
-              src={"/frames/#{frame.id}"}
-              data-timestamp={frame.timestamp}
-              class="h-16 w-auto rounded-sm cursor-crosshair shrink-0 opacity-80 hover:opacity-100 transition-opacity"
-              loading="lazy"
+              :if={@frames != []}
+              id="explorer-frame"
+              src={"/frames/#{List.first(@frames).id}"}
+              class="w-full h-auto max-h-[420px] object-contain mx-auto"
             />
+            <div
+              :if={@frames == []}
+              class="w-full h-64 flex items-center justify-center text-gray-500"
+            >
+              No frames extracted yet
+            </div>
           </div>
-          <div id="filmstrip-caption" class="mt-2 text-sm text-gray-600 min-h-[2.5rem] px-1">
-            <span class="text-gray-400">Hover the filmstrip to see transcript at that moment</span>
+
+          <%!-- Caption --%>
+          <div
+            id="explorer-caption"
+            class="mt-2 px-2 py-3 bg-gray-900 text-white text-center rounded-lg min-h-[3rem] flex items-center justify-center"
+          >
+            <span class="text-gray-500 text-sm">Hover the frame or drag the slider to explore</span>
+          </div>
+
+          <%!-- Timeline slider --%>
+          <div class="mt-3 flex items-center gap-3">
+            <span
+              id="explorer-time"
+              class="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded w-16 text-center shrink-0"
+            >
+              00:00
+            </span>
+            <input
+              type="range"
+              id="explorer-slider"
+              min="0"
+              max={@video.duration || 0}
+              step="0.5"
+              value="0"
+              class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            />
+            <span class="text-xs text-gray-400 shrink-0">
+              {format_duration(@video.duration)}
+            </span>
           </div>
         </div>
 
-        <script :type={Phoenix.LiveView.ColocatedHook} name=".Filmstrip">
+        <%!-- Search + transcript --%>
+        <div class="mt-6">
+          <form phx-change="filter" class="mb-4" id="transcript-filter-form">
+            <input
+              type="text"
+              name="q"
+              value={@query}
+              placeholder="Search spoken words..."
+              phx-debounce="300"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              id="transcript-filter"
+            />
+          </form>
+
+          <div :if={@query != "" && @segments == []} class="text-center py-6 text-gray-400 text-sm">
+            No matches for &ldquo;{@query}&rdquo;
+          </div>
+
+          <div :if={@segments == [] && @query == "" && @all_segments == []} class="text-center py-8 text-gray-400">
+            No transcripts yet. Classify this video first.
+          </div>
+
+          <div id="transcript-segments" class="space-y-0.5">
+            <button
+              :for={segment <- @segments}
+              type="button"
+              data-start={segment.start_time}
+              data-end={segment.end_time}
+              class={[
+                "transcript-segment w-full text-left flex items-start gap-3 px-3 py-2 rounded",
+                "hover:bg-blue-50 transition-colors cursor-pointer"
+              ]}
+            >
+              <span class="shrink-0 font-mono text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded mt-0.5 w-14 text-center">
+                {format_timestamp(segment.start_time)}
+              </span>
+              <span class="text-sm text-gray-700 leading-relaxed flex-1">
+                {segment.text}
+              </span>
+            </button>
+          </div>
+
+          <div :if={@query != "" && @segments != []} class="mt-3 text-xs text-gray-400">
+            {length(@segments)} of {length(@all_segments)} segments
+          </div>
+        </div>
+
+        <%!-- Colocated JS hook --%>
+        <script :type={Phoenix.LiveView.ColocatedHook} name=".VideoExplorer">
           export default {
             mounted() {
+              const frames = JSON.parse(this.el.dataset.frames)
               const segments = JSON.parse(this.el.dataset.segments)
-              const caption = document.getElementById("filmstrip-caption")
-              const imgs = this.el.querySelectorAll("img")
+              const duration = parseFloat(this.el.dataset.duration) || 1
 
-              imgs.forEach(img => {
-                img.addEventListener("mouseenter", () => {
-                  const ts = parseFloat(img.dataset.timestamp)
-                  const seg = segments.find(s => ts >= s.start && ts < s.end)
-                    || segments.reduce((closest, s) =>
-                      Math.abs(s.start - ts) < Math.abs(closest.start - ts) ? s : closest
-                    , segments[0])
+              if (frames.length === 0) return
 
-                  if (seg) {
-                    const mins = String(Math.floor(ts / 60)).padStart(2, "0")
-                    const secs = String(Math.floor(ts % 60)).padStart(2, "0")
-                    caption.innerHTML = `<span class="font-mono text-xs text-gray-400">${mins}:${secs}</span> <span class="ml-2">${seg.text}</span>`
+              const img = document.getElementById("explorer-frame")
+              const caption = document.getElementById("explorer-caption")
+              const slider = document.getElementById("explorer-slider")
+              const timeDisplay = document.getElementById("explorer-time")
+              const frameContainer = document.getElementById("frame-container")
+
+              // Preload all frame URLs for smooth scrubbing
+              frames.forEach(f => {
+                const preload = new Image()
+                preload.src = `/frames/${f.id}`
+              })
+
+              const nearestFrame = (ts) => {
+                let best = frames[0]
+                for (const f of frames) {
+                  if (Math.abs(f.timestamp - ts) < Math.abs(best.timestamp - ts)) best = f
+                }
+                return best
+              }
+
+              const segmentAt = (ts) => {
+                for (const s of segments) {
+                  if (ts >= s.start && ts < s.end) return s
+                }
+                // Find closest if between segments
+                let closest = segments[0]
+                for (const s of segments) {
+                  if (Math.abs(s.start - ts) < Math.abs(closest.start - ts)) closest = s
+                }
+                return closest
+              }
+
+              const formatTime = (secs) => {
+                const total = Math.floor(secs)
+                const h = Math.floor(total / 3600)
+                const m = Math.floor((total % 3600) / 60)
+                const s = total % 60
+                const pad = (n) => String(n).padStart(2, "0")
+                return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
+              }
+
+              const update = (ts) => {
+                const frame = nearestFrame(ts)
+                if (img.dataset.currentFrame !== String(frame.id)) {
+                  img.src = `/frames/${frame.id}`
+                  img.dataset.currentFrame = String(frame.id)
+                }
+
+                const seg = segmentAt(ts)
+                if (seg) {
+                  caption.innerHTML = `<span class="text-base">${seg.text}</span>`
+                } else {
+                  caption.innerHTML = `<span class="text-gray-500 text-sm">...</span>`
+                }
+
+                timeDisplay.textContent = formatTime(ts)
+
+                // Highlight active segment in transcript
+                document.querySelectorAll(".transcript-segment").forEach(el => {
+                  const start = parseFloat(el.dataset.start)
+                  const end = parseFloat(el.dataset.end)
+                  if (ts >= start && ts < end) {
+                    el.classList.add("bg-blue-100")
+                    el.classList.remove("hover:bg-blue-50")
+                  } else {
+                    el.classList.remove("bg-blue-100")
+                    el.classList.add("hover:bg-blue-50")
                   }
                 })
+              }
+
+              // Slider scrub
+              slider.addEventListener("input", (e) => {
+                update(parseFloat(e.target.value))
               })
 
-              this.el.addEventListener("mouseleave", () => {
-                caption.innerHTML = `<span class="text-gray-400">Hover the filmstrip to see transcript at that moment</span>`
+              // Frame hover → scrub through frames by mouse position
+              frameContainer.addEventListener("mousemove", (e) => {
+                const rect = frameContainer.getBoundingClientRect()
+                const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+                const ts = pct * duration
+                update(ts)
+                slider.value = ts
               })
+
+              // Transcript segment click → jump to that time
+              document.getElementById("transcript-segments")?.addEventListener("click", (e) => {
+                const btn = e.target.closest("[data-start]")
+                if (!btn) return
+                const ts = parseFloat(btn.dataset.start)
+                slider.value = ts
+                update(ts)
+                // Scroll frame into view
+                frameContainer.scrollIntoView({ behavior: "smooth", block: "start" })
+              })
+
+              // Initialize with first frame
+              update(0)
             }
           }
         </script>
-
-        <form phx-change="filter" class="mb-6" id="transcript-filter-form">
-          <input
-            type="text"
-            name="q"
-            value={@query}
-            placeholder="Search within this transcript..."
-            phx-debounce="300"
-            autofocus
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            id="transcript-filter"
-          />
-        </form>
-
-        <div :if={@query != "" && @segments == []} class="text-center py-8 text-gray-400">
-          No transcript matches for &ldquo;{@query}&rdquo;
-        </div>
-
-        <div :if={@segments == [] && @query == "" && @all_segments == []} class="text-center py-12 text-gray-400">
-          No transcripts yet. Run classification on this video first.
-        </div>
-
-        <div class="space-y-1">
-          <div
-            :for={segment <- @segments}
-            class="flex items-start gap-3 p-2 rounded hover:bg-gray-50 transition-colors"
-          >
-            <span class="shrink-0 font-mono text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded mt-0.5 w-24 text-center">
-              {format_timestamp(segment.start_time)}
-            </span>
-            <p class="text-sm text-gray-800 leading-relaxed flex-1">
-              {segment.text}
-            </p>
-          </div>
-        </div>
-
-        <div :if={@query != "" && @segments != []} class="mt-4 text-xs text-gray-400">
-          {length(@segments)} of {length(@all_segments)} segments match &ldquo;{@query}&rdquo;
-        </div>
       </div>
     </Layouts.app>
     """

@@ -28,8 +28,9 @@ COPY priv priv
 COPY lib lib
 COPY assets assets
 
-RUN mix assets.deploy
+# Compile first — colocated JS hooks need the build artifacts
 RUN mix compile
+RUN mix assets.deploy
 
 COPY config/runtime.exs config/
 

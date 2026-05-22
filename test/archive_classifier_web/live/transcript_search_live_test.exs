@@ -53,16 +53,19 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLiveTest do
   end
 
   describe "search within transcript" do
-    test "filters segments by q param", %{conn: conn} do
+    test "filters transcript segment buttons by q param", %{conn: conn} do
       video = insert_video!()
       insert_transcript!(video, %{text: "beautiful guitar solo", start_time: 10.0, end_time: 20.0})
       insert_transcript!(video, %{text: "drum fill here", start_time: 20.0, end_time: 30.0})
       insert_transcript!(video, %{text: "another guitar part", start_time: 40.0, end_time: 50.0})
 
-      {:ok, _view, html} = live(conn, "/videos/#{video.id}/transcript?q=guitar")
-      assert html =~ "guitar solo"
-      assert html =~ "guitar part"
-      refute html =~ "drum fill"
+      {:ok, view, _html} = live(conn, "/videos/#{video.id}/transcript?q=guitar")
+
+      # Filtered segments appear as clickable buttons
+      assert has_element?(view, "button[data-start='10.0']")
+      assert has_element?(view, "button[data-start='40.0']")
+      # "drum fill" segment is filtered out of the button list
+      refute has_element?(view, "button[data-start='20.0']")
     end
 
     test "shows all segments when q is empty", %{conn: conn} do
