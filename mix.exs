@@ -67,7 +67,7 @@ defmodule ArchiveClassifier.MixProject do
       {:bumblebee, "~> 0.6"},
       {:nx, "~> 0.9"},
       {:exla, "~> 0.9"},
-      {:gen_stage, "~> 1.2"},
+      {:twerker, path: "../twerker"},
       {:req, "~> 0.5"},
       {:exqlite, "~> 0.36", runtime: false},
       {:xav, "~> 0.11"},

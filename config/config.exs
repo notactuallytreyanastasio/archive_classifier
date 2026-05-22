@@ -11,6 +11,8 @@ config :archive_classifier,
   ecto_repos: [ArchiveClassifier.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+config :twerker, repo: ArchiveClassifier.Repo
+
 # Configure the endpoint
 config :archive_classifier, ArchiveClassifierWeb.Endpoint,
   url: [host: "localhost"],

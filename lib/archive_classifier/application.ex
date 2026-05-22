@@ -14,8 +14,8 @@ defmodule ArchiveClassifier.Application do
         ArchiveClassifier.Cache
       ] ++
         maybe_whisper() ++
+        maybe_twerker() ++
         [
-          ArchiveClassifier.Pipeline.Supervisor,
           {DNSCluster, query: Application.get_env(:archive_classifier, :dns_cluster_query) || :ignore},
           {Phoenix.PubSub, name: ArchiveClassifier.PubSub},
           ArchiveClassifierWeb.Endpoint
@@ -25,6 +25,14 @@ defmodule ArchiveClassifier.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: ArchiveClassifier.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp maybe_twerker do
+    if Application.get_env(:archive_classifier, :start_twerker, true) do
+      [{Twerker.PipelineSupervisor, repo: ArchiveClassifier.Repo, num_consumers: 2, poll_interval: 1_000}]
+    else
+      []
+    end
   end
 
   defp maybe_whisper do

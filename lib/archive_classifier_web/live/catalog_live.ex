@@ -68,8 +68,8 @@ defmodule ArchiveClassifierWeb.CatalogLive do
     video_id = String.to_integer(id)
     video = Archive.get_video!(video_id)
 
-    # Enqueue in the supervised pipeline
-    ArchiveClassifier.Pipeline.TranscriptionProducer.enqueue(video_id)
+    # Enqueue via Twerker — persisted to Postgres, picked up by GenStage consumers
+    Twerker.enqueue(ArchiveClassifier.Pipeline.Transcribe, :run, [video_id])
 
     case Archive.queue_for_classification(video) do
       {:ok, _updated} ->
@@ -101,9 +101,9 @@ defmodule ArchiveClassifierWeb.CatalogLive do
       from(f in ArchiveClassifier.Classification.VideoFrame, where: f.video_id == ^video_id)
     )
 
-    # Reset and re-enqueue
+    # Reset and re-enqueue via Twerker
     video = Archive.get_video!(video_id)
-    ArchiveClassifier.Pipeline.TranscriptionProducer.enqueue(video_id)
+    Twerker.enqueue(ArchiveClassifier.Pipeline.Transcribe, :run, [video_id])
 
     case Archive.queue_for_classification(video) do
       {:ok, _updated} ->
@@ -123,11 +123,11 @@ defmodule ArchiveClassifierWeb.CatalogLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
-      <div class="max-w-6xl mx-auto px-4 py-8">
-        <header class="mb-6">
-          <h1 class="text-2xl font-semibold text-gray-900">Archive Catalog</h1>
-          <p class="mt-1 text-sm text-gray-500">
+    <Layouts.app flash={@flash} page_title="Archive Catalog">
+      <div class="os-content-padded" style="background: #ddd;">
+        <header style="margin-bottom: 12px;">
+          <h1 class="mac-header">Archive Catalog</h1>
+          <p class="mac-subtext" style="margin-top: 2px;">
             {format_number(@stats.total)} videos &middot;
             {format_number(@stats.pending)} pending &middot;
             {format_number(@stats.queued)} queued &middot;
@@ -135,15 +135,16 @@ defmodule ArchiveClassifierWeb.CatalogLive do
           </p>
         </header>
 
-        <div class="flex gap-3 mb-6">
-          <form phx-change="search" class="flex-1">
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <form phx-change="search" style="flex: 1;">
             <input
               type="text"
               name="search"
               value={@search}
               placeholder="Search by title or description..."
               phx-debounce="300"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="mac-input"
+              style="width: 100%;"
               id="catalog-search"
             />
           </form>
@@ -151,7 +152,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
           <form phx-change="sort">
             <select
               name="sort"
-              class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+              class="mac-select"
               id="catalog-sort"
             >
               <option :for={{val, label} <- @sort_options} value={val} selected={val == @sort}>
@@ -163,26 +164,27 @@ defmodule ArchiveClassifierWeb.CatalogLive do
 
         <%!-- Collection overview --%>
         <div :if={@selected_collection == nil}>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px;">
             <button
               :for={col <- @collections}
               phx-click="select_collection"
               phx-value-collection={col.name}
-              class="text-left p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-400 hover:shadow-sm transition-all cursor-pointer"
+              class="mac-card"
+              style="text-align: left; padding: 0; cursor: pointer; display: block;"
             >
-              <div class="flex items-start gap-3">
+              <div style="display: flex; align-items: start; gap: 8px; padding: 8px;">
                 <img
                   src={thumbnail_url(col.sample_id)}
-                  class="w-16 h-12 object-cover rounded bg-gray-100"
+                  style="width: 64px; height: 48px; object-fit: cover; border: 1px solid #000; background: #808080;"
                   loading="lazy"
                 />
-                <div class="flex-1 min-w-0">
-                  <h2 class="text-sm font-semibold text-gray-900">
+                <div style="flex: 1; min-width: 0;">
+                  <div class="mac-text" style="font-weight: bold;">
                     {format_collection(col.name)}
-                  </h2>
-                  <p class="text-xs text-gray-500 mt-0.5">
+                  </div>
+                  <div class="mac-subtext" style="margin-top: 2px;">
                     {col.count} videos &middot; {format_total_duration(col.total_duration)}
-                  </p>
+                  </div>
                 </div>
               </div>
             </button>
@@ -191,62 +193,61 @@ defmodule ArchiveClassifierWeb.CatalogLive do
 
         <%!-- Drilled-in collection view --%>
         <div :if={@selected_collection != nil}>
-          <div class="flex items-center gap-3 mb-4">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
             <button
               phx-click="back_to_collections"
-              class="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              class="mac-btn"
+              style="font-size: 11px; padding: 2px 10px;"
             >
-              &larr; All collections
+              &larr; Back
             </button>
-            <h2 class="text-lg font-semibold text-gray-800">
+            <span class="mac-header" style="font-size: 13px;">
               {format_collection(@selected_collection)}
-            </h2>
-            <span class="text-xs text-gray-400">{length(@videos)} videos</span>
+            </span>
+            <span class="mac-subtext">{length(@videos)} videos</span>
           </div>
 
-          <div :if={@videos == []} class="text-center py-12 text-gray-400">
+          <div :if={@videos == []} class="mac-empty">
             No videos found.
           </div>
 
-          <div class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
+          <div style="display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
             <div
               :for={video <- @videos}
               id={"video-#{video.id}"}
-              class="bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors overflow-visible group relative"
+              class="mac-card group"
+              style="overflow: visible; position: relative;"
             >
               <img
                 src={thumbnail_url(video.id)}
-                class="w-full h-32 object-cover bg-gray-100"
+                class="mac-thumb"
+                style="width: 100%; height: 120px; object-fit: cover;"
                 loading="lazy"
               />
-              <div class="p-3">
-                <h3 class="text-sm font-medium text-gray-900 cursor-default">
+              <div style="padding: 6px 8px;">
+                <div class="mac-text" style="font-weight: bold; font-size: 11px; cursor: default;">
                   {String.trim(video.title)}
-                </h3>
+                </div>
                 <div
                   :if={video.description && String.trim(video.description) != String.trim(video.title)}
-                  class="absolute z-10 left-2 right-2 bottom-full mb-1 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg leading-relaxed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity pointer-events-none"
+                  class="mac-tooltip"
+                  style="position: absolute; z-index: 10; left: 4px; right: 4px; bottom: 100%; margin-bottom: 4px; opacity: 0; visibility: hidden; transition: opacity 0.15s; pointer-events: none; max-height: 120px; overflow: hidden;"
                 >
                   {strip_html(video.description)}
                 </div>
-                <p class="text-xs text-gray-500 mt-1">
+                <div class="mac-subtext" style="margin-top: 2px;">
                   {format_duration(video.duration)}
-                </p>
+                </div>
 
-                <div :if={video.tags != []} class="mt-1.5">
-                  <span
-                    :for={tag <- video.tags}
-                    class="inline-block px-1.5 py-0.5 bg-blue-50 text-blue-700 text-xs rounded mr-1 mb-1"
-                  >
+                <div :if={video.tags != []} style="margin-top: 4px;">
+                  <span :for={tag <- video.tags} class="mac-tag">
                     {tag}
                   </span>
                 </div>
 
-                <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                  <span class={[
-                    "text-xs px-2 py-0.5 rounded",
-                    status_class(video.classification_status)
-                  ]}>
+                <hr class="mac-divider" style="margin-top: 6px;" />
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+                  <span class={["mac-badge", status_badge_class(video.classification_status)]}>
                     {video.classification_status}
                   </span>
 
@@ -254,27 +255,30 @@ defmodule ArchiveClassifierWeb.CatalogLive do
                     :if={video.classification_status == :pending}
                     phx-click="classify"
                     phx-value-id={video.id}
-                    class="text-xs px-3 py-1 bg-gray-900 text-white rounded hover:bg-gray-700 transition-colors"
+                    class="mac-btn mac-btn-primary"
+                    style="font-size: 10px; padding: 2px 10px;"
                   >
                     Classify
                   </button>
 
-                  <.link
-                    :if={video.classification_status in [:classified, :failed]}
-                    navigate={~p"/videos/#{video.id}/transcript"}
-                    class="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors"
-                  >
-                    View Transcript
-                  </.link>
+                  <div :if={video.classification_status in [:classified, :failed]} style="display: flex; gap: 4px;">
+                    <.link
+                      navigate={~p"/videos/#{video.id}/transcript"}
+                      class="mac-btn"
+                      style="font-size: 10px; padding: 2px 10px; text-decoration: none; color: #000;"
+                    >
+                      Transcript
+                    </.link>
 
-                  <button
-                    :if={video.classification_status in [:classified, :failed]}
-                    phx-click="reclassify"
-                    phx-value-id={video.id}
-                    class="text-xs px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-400 transition-colors"
-                  >
-                    Reclassify
-                  </button>
+                    <button
+                      phx-click="reclassify"
+                      phx-value-id={video.id}
+                      class="mac-btn"
+                      style="font-size: 10px; padding: 2px 10px;"
+                    >
+                      Redo
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -374,10 +378,10 @@ defmodule ArchiveClassifierWeb.CatalogLive do
   defp format_collection("diamondheadtapes"), do: "Diamond Head Tapes"
   defp format_collection(other), do: other
 
-  defp status_class(:pending), do: "bg-gray-100 text-gray-600"
-  defp status_class(:queued), do: "bg-amber-100 text-amber-700"
-  defp status_class(:classifying), do: "bg-blue-100 text-blue-700"
-  defp status_class(:classified), do: "bg-green-100 text-green-700"
-  defp status_class(:failed), do: "bg-red-100 text-red-700"
-  defp status_class(_), do: "bg-gray-100 text-gray-600"
+  defp status_badge_class(:pending), do: "mac-badge-pending"
+  defp status_badge_class(:queued), do: "mac-badge-queued"
+  defp status_badge_class(:classifying), do: "mac-badge-classifying"
+  defp status_badge_class(:classified), do: "mac-badge-classified"
+  defp status_badge_class(:failed), do: "mac-badge-failed"
+  defp status_badge_class(_), do: "mac-badge-pending"
 end
