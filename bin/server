@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# bin/server — start the Phoenix server with logs going to both stdout and a log file.
+#
+# The log file at logs/server.log can be tailed by bin/logs.sh
+# or any other unified log viewer.
+
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
+
+mkdir -p logs
+
+echo "Starting archive_classifier server..."
+echo "Logs: logs/server.log"
+echo ""
+
+# Run the server, tee to both stdout and log file
+PKG_CONFIG_PATH="/opt/homebrew/opt/ffmpeg@7/lib/pkgconfig:${PKG_CONFIG_PATH:-}" \
+  mix phx.server 2>&1 | tee logs/server.log
