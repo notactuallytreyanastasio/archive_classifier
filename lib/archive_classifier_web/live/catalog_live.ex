@@ -186,7 +186,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
                   {String.trim(video.title)}
                 </h3>
                 <div
-                  :if={video.description && String.trim(video.description || "") != String.trim(video.title)}
+                  :if={video.description && String.trim(video.description) != String.trim(video.title)}
                   class="absolute z-10 left-2 right-2 bottom-full mb-1 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg leading-relaxed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity pointer-events-none"
                 >
                   {strip_html(video.description)}
@@ -301,8 +301,6 @@ defmodule ArchiveClassifierWeb.CatalogLive do
   end
 
   defp format_number(n), do: Integer.to_string(n)
-
-  defp strip_html(nil), do: ""
 
   defp strip_html(text) do
     text
