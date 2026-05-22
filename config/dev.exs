@@ -81,9 +81,7 @@ config :phoenix, :stacktrace_depth, 20
 config :phoenix, :plug_init_mode, :runtime
 
 # Whisper ML serving
-# Whisper starts lazily on first classify request, not on boot
-# This keeps server restart fast (~2s instead of 4+ minutes)
-config :archive_classifier, start_whisper: false
+config :archive_classifier, start_whisper: true
 config :archive_classifier, whisper_model: "openai/whisper-medium"
 
 config :phoenix_live_view,
