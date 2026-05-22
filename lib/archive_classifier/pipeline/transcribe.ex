@@ -71,9 +71,7 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
 
       case Req.get(url,
              into: File.stream!(output_path),
-             connect_timeout: :timer.seconds(30),
              receive_timeout: :timer.minutes(30),
-             pool_timeout: :timer.minutes(5),
              retry: :transient,
              max_retries: 5,
              retry_delay: &exponential_backoff/1
