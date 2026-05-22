@@ -56,6 +56,7 @@ defmodule ArchiveClassifier.ML.Whisper do
           tokenizer,
           generation_config,
           defn_options: [compiler: EXLA],
+          chunk_num_seconds: 30,
           timestamps: :segments
         )
       end)
