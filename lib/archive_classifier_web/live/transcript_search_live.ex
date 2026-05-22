@@ -115,6 +115,13 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
 
           <%!-- Timeline slider --%>
           <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+            <button
+              id="play-btn"
+              class="mac-btn"
+              style="padding: 2px 10px; font-size: 12px; flex-shrink: 0; width: 44px;"
+            >
+              ▶
+            </button>
             <span
               id="explorer-time"
               class="mac-timestamp"
@@ -287,6 +294,50 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
                 update(ts)
                 // Scroll frame into view
                 frameContainer.scrollIntoView({ behavior: "smooth", block: "start" })
+              })
+
+              // Play/pause — auto-advance through frames
+              const playBtn = document.getElementById("play-btn")
+              let playInterval = null
+              let currentFrameIdx = 0
+
+              playBtn.addEventListener("click", () => {
+                if (playInterval) {
+                  // Pause
+                  clearInterval(playInterval)
+                  playInterval = null
+                  playBtn.textContent = "▶"
+                } else {
+                  // Find starting frame index closest to current slider position
+                  const currentTs = parseFloat(slider.value)
+                  currentFrameIdx = frames.reduce((bestIdx, f, idx) =>
+                    Math.abs(f.timestamp - currentTs) < Math.abs(frames[bestIdx].timestamp - currentTs) ? idx : bestIdx
+                  , 0)
+
+                  playBtn.textContent = "⏸"
+                  playInterval = setInterval(() => {
+                    currentFrameIdx++
+                    if (currentFrameIdx >= frames.length) {
+                      currentFrameIdx = 0  // Loop
+                    }
+                    const ts = frames[currentFrameIdx].timestamp
+                    slider.value = ts
+                    update(ts)
+
+                    // Auto-scroll active segment into view
+                    const active = document.querySelector(".transcript-segment[style*='background']")
+                    if (active) active.scrollIntoView({ behavior: "smooth", block: "nearest" })
+                  }, 3000)
+                }
+              })
+
+              // Stop playback on manual interaction
+              slider.addEventListener("input", () => {
+                if (playInterval) {
+                  clearInterval(playInterval)
+                  playInterval = null
+                  playBtn.textContent = "▶"
+                }
               })
 
               // Initialize with first frame
