@@ -19,6 +19,8 @@ defmodule ArchiveClassifierWeb.Router do
 
     live "/", CatalogLive
     live "/search", SearchLive
+
+    get "/thumbnails/:id", ThumbnailController, :show
   end
 
   # Other scopes may use custom stacks.

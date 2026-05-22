@@ -73,7 +73,7 @@ defmodule ArchiveClassifierWeb.SearchLive do
           >
             <div class="flex items-start gap-4">
               <img
-                src={"https://archive.org/services/img/#{result.archive_id}"}
+                src={"/thumbnails/#{result.video_id}"}
                 class="w-20 h-14 object-cover rounded bg-gray-100 shrink-0"
                 loading="lazy"
               />

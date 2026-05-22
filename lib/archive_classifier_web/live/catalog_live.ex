@@ -134,7 +134,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
             >
               <div class="flex items-start gap-3">
                 <img
-                  src={thumbnail_url(col.sample_archive_id)}
+                  src={thumbnail_url(col.sample_id)}
                   class="w-16 h-12 object-cover rounded bg-gray-100"
                   loading="lazy"
                 />
@@ -177,7 +177,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
               class="bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors overflow-visible group relative"
             >
               <img
-                src={thumbnail_url(video.archive_id)}
+                src={thumbnail_url(video.id)}
                 class="w-full h-32 object-cover bg-gray-100"
                 loading="lazy"
               />
@@ -243,7 +243,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
           name: name,
           count: length(vids),
           total_duration: vids |> Enum.map(& &1.duration) |> Enum.reject(&is_nil/1) |> Enum.sum(),
-          sample_archive_id: List.first(vids).archive_id
+          sample_id: List.first(vids).id
         }
       end)
       |> Enum.sort_by(& &1.count, :desc)
@@ -274,7 +274,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
 
   # Formatters
 
-  defp thumbnail_url(archive_id), do: "https://archive.org/services/img/#{archive_id}"
+  defp thumbnail_url(video_id), do: "/thumbnails/#{video_id}"
 
   defp format_duration(nil), do: "unknown"
 

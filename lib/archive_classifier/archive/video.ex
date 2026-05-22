@@ -31,6 +31,7 @@ defmodule ArchiveClassifier.Archive.Video do
     field :files_json, :string
     field :classification_status, Ecto.Enum, values: [:pending, :queued, :classifying, :classified, :failed], default: :pending
     field :tags, {:array, :string}, default: []
+    field :thumbnail, :binary
 
     timestamps()
   end
