@@ -82,7 +82,7 @@ config :phoenix, :plug_init_mode, :runtime
 
 # Whisper ML serving
 config :archive_classifier, start_whisper: true
-config :archive_classifier, whisper_model: "openai/whisper-small"
+config :archive_classifier, whisper_model: "openai/whisper-medium"
 
 config :phoenix_live_view,
   # Include debug annotations and locations in rendered markup.
