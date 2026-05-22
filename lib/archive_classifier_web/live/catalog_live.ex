@@ -87,6 +87,40 @@ defmodule ArchiveClassifierWeb.CatalogLive do
   end
 
   @impl true
+  def handle_event("reclassify", %{"id" => id}, socket) do
+    video_id = String.to_integer(id)
+
+    # Clear old transcripts and frames
+    import Ecto.Query
+
+    ArchiveClassifier.Repo.delete_all(
+      from(t in ArchiveClassifier.Classification.Transcript, where: t.video_id == ^video_id)
+    )
+
+    ArchiveClassifier.Repo.delete_all(
+      from(f in ArchiveClassifier.Classification.VideoFrame, where: f.video_id == ^video_id)
+    )
+
+    # Reset and re-enqueue
+    video = Archive.get_video!(video_id)
+    ArchiveClassifier.Pipeline.TranscriptionProducer.enqueue(video_id)
+
+    case Archive.queue_for_classification(video) do
+      {:ok, _updated} ->
+        Cache.reload(video_id)
+
+        {:noreply,
+         socket
+         |> assign(:stats, Cache.stats())
+         |> assign_videos()
+         |> put_flash(:info, "Reclassifying #{String.trim(video.title)}")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to reclassify.")}
+    end
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
@@ -226,12 +260,21 @@ defmodule ArchiveClassifierWeb.CatalogLive do
                   </button>
 
                   <.link
-                    :if={video.classification_status == :classified}
+                    :if={video.classification_status in [:classified, :failed]}
                     navigate={~p"/videos/#{video.id}/transcript"}
                     class="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors"
                   >
                     View Transcript
                   </.link>
+
+                  <button
+                    :if={video.classification_status in [:classified, :failed]}
+                    phx-click="reclassify"
+                    phx-value-id={video.id}
+                    class="text-xs px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-400 transition-colors"
+                  >
+                    Reclassify
+                  </button>
                 </div>
               </div>
             </div>
