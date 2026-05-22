@@ -69,7 +69,13 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
     else
       Logger.info("[pipeline] Downloading #{archive_id}...")
 
-      case Req.get(url, into: File.stream!(output_path), receive_timeout: :timer.minutes(30)) do
+      case Req.get(url,
+             into: File.stream!(output_path),
+             connect_timeout: :timer.minutes(2),
+             receive_timeout: :timer.minutes(30),
+             retry: :transient,
+             max_retries: 3
+           ) do
         {:ok, %{status: 200}} -> {:ok, output_path}
         {:ok, %{status: status}} -> {:error, "Download failed with status #{status}"}
         {:error, reason} -> {:error, "Download failed: #{inspect(reason)}"}
