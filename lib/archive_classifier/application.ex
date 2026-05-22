@@ -10,11 +10,9 @@ defmodule ArchiveClassifier.Application do
     children = [
       ArchiveClassifierWeb.Telemetry,
       ArchiveClassifier.Repo,
+      ArchiveClassifier.Cache,
       {DNSCluster, query: Application.get_env(:archive_classifier, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: ArchiveClassifier.PubSub},
-      # Start a worker by calling: ArchiveClassifier.Worker.start_link(arg)
-      # {ArchiveClassifier.Worker, arg},
-      # Start to serve requests, typically the last entry
       ArchiveClassifierWeb.Endpoint
     ]
 

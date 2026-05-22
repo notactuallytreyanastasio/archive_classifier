@@ -69,6 +69,34 @@ defmodule ArchiveClassifier.Archive do
     Repo.one(query)
   end
 
+  @doc """
+  Lists videos grouped by collection.
+  Returns a list of `{collection_name, [Video.t()]}` tuples, sorted by collection name.
+  """
+  @spec list_videos_by_collection(list_opts()) :: [{String.t(), [Video.t()]}]
+  def list_videos_by_collection(opts \\ []) do
+    Video
+    |> apply_search(opts[:search])
+    |> apply_status(opts[:status])
+    |> order_by([v], [asc: v.collection, asc: v.duration])
+    |> Repo.all()
+    |> Enum.group_by(& &1.collection)
+    |> Enum.sort_by(fn {_col, vids} -> -length(vids) end)
+  end
+
+  @doc """
+  Returns collection names with their video counts.
+  """
+  @spec collection_counts() :: [{String.t(), non_neg_integer()}]
+  def collection_counts do
+    from(v in Video,
+      group_by: v.collection,
+      select: {v.collection, count(v.id)},
+      order_by: [desc: count(v.id)]
+    )
+    |> Repo.all()
+  end
+
   defp apply_search(query, nil), do: query
   defp apply_search(query, ""), do: query
 
