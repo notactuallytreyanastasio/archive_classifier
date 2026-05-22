@@ -174,7 +174,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
             <div
               :for={video <- @videos}
               id={"video-#{video.id}"}
-              class="bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors overflow-hidden"
+              class="bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors overflow-hidden group relative"
             >
               <img
                 src={thumbnail_url(video.archive_id)}
@@ -182,12 +182,15 @@ defmodule ArchiveClassifierWeb.CatalogLive do
                 loading="lazy"
               />
               <div class="p-3">
-                <h3
-                  class="text-sm font-medium text-gray-900"
-                  title={video.description || ""}
-                >
+                <h3 class="text-sm font-medium text-gray-900 cursor-default">
                   {String.trim(video.title)}
                 </h3>
+                <div
+                  :if={video.description && String.trim(video.description) != String.trim(video.title)}
+                  class="hidden group-hover:block absolute z-10 left-2 right-2 top-full mt-1 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg leading-relaxed"
+                >
+                  {String.trim(video.description)}
+                </div>
                 <p class="text-xs text-gray-500 mt-1">
                   {format_duration(video.duration)}
                 </p>
