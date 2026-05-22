@@ -35,3 +35,6 @@ archive_classifier-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Deciduous database (local)
+.deciduous/
+.cache/

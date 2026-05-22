@@ -82,6 +82,10 @@ config :phoenix, :plug_init_mode, :runtime
 
 # Whisper ML serving
 config :archive_classifier, start_whisper: true
+
+# Cache EXLA compiled graphs to disk — avoids 4+ minute JIT recompile on every restart
+config :nx, default_backend: EXLA.Backend
+config :exla, cache_dir: Path.expand("../.cache/exla", __DIR__)
 config :archive_classifier, whisper_model: "openai/whisper-medium"
 
 config :phoenix_live_view,
