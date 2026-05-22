@@ -27,6 +27,7 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
   @spec run(integer()) :: {:ok, [Transcript.t()]} | {:error, term()}
   def run(video_id) do
     video = Archive.get_video!(video_id)
+    Logger.info("[pipeline] Starting: #{video.archive_id} (#{format_duration(video.duration)})")
 
     with :ok <- set_status(video, :classifying),
          {:ok, video_path} <- download(video),
@@ -37,7 +38,7 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
       set_status(video, :classified)
       cleanup([video_path, audio_path])
       Cache.reload(video_id)
-      Logger.info("Transcribed #{video.archive_id}: #{length(transcripts)} segments")
+      Logger.info("[pipeline] Done: #{video.archive_id} — #{length(transcripts)} segments")
       {:ok, transcripts}
     else
       {:error, reason} = error ->
@@ -65,7 +66,7 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
     if File.exists?(output_path) do
       {:ok, output_path}
     else
-      Logger.info("Downloading #{archive_id}...")
+      Logger.info("[pipeline] Downloading #{archive_id}...")
 
       case Req.get(url, into: File.stream!(output_path), receive_timeout: :timer.minutes(30)) do
         {:ok, %{status: 200}} -> {:ok, output_path}
@@ -76,11 +77,13 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
   end
 
   defp extract_audio(video_path, %Video{archive_id: archive_id}) do
+    Logger.info("[pipeline] Extracting audio: #{archive_id}")
     audio_path = Path.join(@tmp_dir, "#{archive_id}.wav")
     Audio.extract_audio(video_path, audio_path)
   end
 
   defp transcribe(audio_path) do
+    Logger.info("[pipeline] Sending to Whisper (this may take a while)...")
     Whisper.transcribe(audio_path)
   end
 
@@ -183,5 +186,14 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
     Enum.each(paths, fn path ->
       File.rm(path)
     end)
+  end
+
+  defp format_duration(nil), do: "unknown"
+
+  defp format_duration(seconds) when is_float(seconds) do
+    total = trunc(seconds)
+    m = div(total, 60)
+    s = rem(total, 60)
+    "#{m}m#{s}s"
   end
 end
