@@ -29,6 +29,11 @@ defmodule ArchiveClassifier.DataCase do
 
   setup tags do
     ArchiveClassifier.DataCase.setup_sandbox(tags)
+
+    if pid = Process.whereis(ArchiveClassifier.Cache) do
+      Ecto.Adapters.SQL.Sandbox.allow(ArchiveClassifier.Repo, self(), pid)
+    end
+
     :ok
   end
 
@@ -38,6 +43,7 @@ defmodule ArchiveClassifier.DataCase do
   def setup_sandbox(tags) do
     pid = Ecto.Adapters.SQL.Sandbox.start_owner!(ArchiveClassifier.Repo, shared: not tags[:async])
     on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+    pid
   end
 
   @doc """

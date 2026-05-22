@@ -33,6 +33,8 @@ defmodule ArchiveClassifierWeb.ConnCase do
 
   setup tags do
     ArchiveClassifier.DataCase.setup_sandbox(tags)
+    # Allow the Cache GenServer to use the sandbox connection
+    Ecto.Adapters.SQL.Sandbox.allow(ArchiveClassifier.Repo, self(), Process.whereis(ArchiveClassifier.Cache))
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end

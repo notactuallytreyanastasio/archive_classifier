@@ -97,6 +97,48 @@ defmodule ArchiveClassifier.Archive do
     |> Repo.all()
   end
 
+  @doc """
+  Lists videos with composable filters including duration range.
+  For the admin dashboard.
+  """
+  @spec list_videos_filtered(keyword()) :: [Video.t()]
+  def list_videos_filtered(opts \\ []) do
+    Video
+    |> apply_search(opts[:search])
+    |> apply_status(opts[:status])
+    |> apply_collection(opts[:collection])
+    |> apply_duration_range(opts[:min_duration], opts[:max_duration])
+    |> order_by([v], asc: v.duration)
+    |> Repo.all()
+  end
+
+  @doc """
+  Mass-enqueue videos for transcription via Twerker.
+  """
+  @spec enqueue_videos([integer()]) :: non_neg_integer()
+  def enqueue_videos(video_ids) when is_list(video_ids) do
+    Enum.each(video_ids, fn id ->
+      Twerker.enqueue(ArchiveClassifier.Pipeline.Transcribe, :run, [id])
+    end)
+
+    {count, _} =
+      from(v in Video, where: v.id in ^video_ids and v.classification_status == :pending)
+      |> Repo.update_all(set: [classification_status: :queued])
+
+    count
+  end
+
+  defp apply_collection(query, nil), do: query
+  defp apply_collection(query, ""), do: query
+  defp apply_collection(query, "all"), do: query
+  defp apply_collection(query, collection), do: from(v in query, where: v.collection == ^collection)
+
+  defp apply_duration_range(query, nil, nil), do: query
+  defp apply_duration_range(query, min, nil) when is_number(min), do: from(v in query, where: v.duration >= ^min)
+  defp apply_duration_range(query, nil, max) when is_number(max), do: from(v in query, where: v.duration <= ^max)
+  defp apply_duration_range(query, min, max) when is_number(min) and is_number(max), do: from(v in query, where: v.duration >= ^min and v.duration <= ^max)
+  defp apply_duration_range(query, _, _), do: query
+
   defp apply_search(query, nil), do: query
   defp apply_search(query, ""), do: query
 

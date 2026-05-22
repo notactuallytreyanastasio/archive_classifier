@@ -21,6 +21,7 @@ defmodule ArchiveClassifierWeb.Router do
     live "/search", SearchLive
 
     live "/videos/:id/transcript", TranscriptSearchLive
+    live "/admin", AdminLive
 
     get "/thumbnails/:id", ThumbnailController, :show
     get "/frames/:id", FrameController, :show

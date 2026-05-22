@@ -31,13 +31,32 @@ defmodule ArchiveClassifierWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  attr :page_title, :string, default: "Archive Classifier"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <main>
-      {render_slot(@inner_block)}
-    </main>
+    <div class="os-window os-window-osx" style="max-width: 95vw; width: 100%; height: calc(100vh - 40px); display: flex; flex-direction: column;">
+      <div class="os-titlebar">
+        <div class="os-titlebar-buttons">
+          <div class="os-btn-close"></div>
+          <div class="os-btn-min"></div>
+          <div class="os-btn-max"></div>
+        </div>
+        <div class="os-titlebar-title">{@page_title}</div>
+      </div>
+      <div class="os-toolbar">
+        <a href="/" class="os-toolbar-btn" style="text-decoration: none; color: #000;">Catalog</a>
+        <a href="/search" class="os-toolbar-btn" style="text-decoration: none; color: #000;">Search</a>
+        <a href="/admin" class="os-toolbar-btn" style="text-decoration: none; color: #000;">Admin</a>
+      </div>
+      <div class="os-content" style="flex: 1; overflow-y: auto;">
+        <main>
+          {render_slot(@inner_block)}
+        </main>
+      </div>
+    </div>
 
     <.flash_group flash={@flash} />
     """
