@@ -255,13 +255,12 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
                 document.querySelectorAll(".transcript-segment").forEach(el => {
                   const start = parseFloat(el.dataset.start)
                   const end = parseFloat(el.dataset.end)
-                  if (ts >= start && ts < end) {
-                    el.style.background = "#000"
-                    el.style.color = "#fff"
-                  } else {
-                    el.style.background = "transparent"
-                    el.style.color = "#000"
-                  }
+                  const active = ts >= start && ts < end
+                  el.style.background = active ? "#000" : "transparent"
+                  el.querySelectorAll("*").forEach(child => {
+                    child.style.color = active ? "#fff" : ""
+                    child.style.background = active ? "transparent" : ""
+                  })
                 })
               }
 
