@@ -10,7 +10,9 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
   alias ArchiveClassifier.Archive.Video
   alias ArchiveClassifier.Cache
   alias ArchiveClassifier.Classification.Transcript
+  alias ArchiveClassifier.Classification.VideoFrame
   alias ArchiveClassifier.Media.Audio
+  alias ArchiveClassifier.Media.Frames
   alias ArchiveClassifier.ML.Whisper
   alias ArchiveClassifier.Repo
 
@@ -30,7 +32,8 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
          {:ok, video_path} <- download(video),
          {:ok, audio_path} <- extract_audio(video_path, video),
          {:ok, result} <- transcribe(audio_path),
-         {:ok, transcripts} <- store_transcripts(video, result) do
+         {:ok, transcripts} <- store_transcripts(video, result),
+         :ok <- extract_and_store_frames(video, video_path) do
       set_status(video, :classified)
       cleanup([video_path, audio_path])
       Cache.reload(video_id)
@@ -100,6 +103,33 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
       Repo.insert_all(Transcript, entries, returning: true)
 
     {:ok, transcripts}
+  end
+
+  defp extract_and_store_frames(video, video_path) do
+    case Frames.extract_frames(video_path) do
+      {:ok, frames} ->
+        now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+
+        entries =
+          Enum.map(frames, fn {timestamp, jpeg} ->
+            %{
+              video_id: video.id,
+              timestamp: timestamp,
+              image: jpeg,
+              inserted_at: now,
+              updated_at: now
+            }
+          end)
+
+        Repo.insert_all(VideoFrame, entries)
+        Logger.info("Stored #{length(entries)} frames for #{video.archive_id}")
+        :ok
+
+      {:error, reason} ->
+        # Frames are nice-to-have — don't fail the whole pipeline
+        Logger.warning("Frame extraction failed for #{video.archive_id}: #{reason}")
+        :ok
+    end
   end
 
   defp cleanup(paths) do

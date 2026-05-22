@@ -23,6 +23,7 @@ defmodule ArchiveClassifierWeb.Router do
     live "/videos/:id/transcript", TranscriptSearchLive
 
     get "/thumbnails/:id", ThumbnailController, :show
+    get "/frames/:id", FrameController, :show
   end
 
   # Other scopes may use custom stacks.

@@ -13,6 +13,7 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
 
   alias ArchiveClassifier.Archive
   alias ArchiveClassifier.Classification.Transcript
+  alias ArchiveClassifier.Classification.VideoFrame
   alias ArchiveClassifier.Repo
 
   @impl true
@@ -25,10 +26,18 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
       |> order_by([t], asc: t.start_time)
       |> Repo.all()
 
+    frames =
+      VideoFrame
+      |> where([f], f.video_id == ^video.id)
+      |> order_by([f], asc: f.timestamp)
+      |> select([f], %{id: f.id, timestamp: f.timestamp})
+      |> Repo.all()
+
     {:ok,
      socket
      |> assign(:video, video)
      |> assign(:all_segments, all_segments)
+     |> assign(:frames, frames)
      |> assign(:page_title, String.trim(video.title))}
   end
 
@@ -70,6 +79,57 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
             </p>
           </div>
         </header>
+
+        <%!-- Filmstrip timeline --%>
+        <div :if={@frames != []} class="mb-6">
+          <div
+            id="filmstrip"
+            class="flex gap-0.5 overflow-x-auto pb-2 rounded-lg bg-gray-900 p-2"
+            phx-hook=".Filmstrip"
+            data-segments={Jason.encode!(Enum.map(@all_segments, fn s -> %{start: s.start_time, end: s.end_time, text: s.text} end))}
+          >
+            <img
+              :for={frame <- @frames}
+              src={"/frames/#{frame.id}"}
+              data-timestamp={frame.timestamp}
+              class="h-16 w-auto rounded-sm cursor-crosshair shrink-0 opacity-80 hover:opacity-100 transition-opacity"
+              loading="lazy"
+            />
+          </div>
+          <div id="filmstrip-caption" class="mt-2 text-sm text-gray-600 min-h-[2.5rem] px-1">
+            <span class="text-gray-400">Hover the filmstrip to see transcript at that moment</span>
+          </div>
+        </div>
+
+        <script :type={Phoenix.LiveView.ColocatedHook} name=".Filmstrip">
+          export default {
+            mounted() {
+              const segments = JSON.parse(this.el.dataset.segments)
+              const caption = document.getElementById("filmstrip-caption")
+              const imgs = this.el.querySelectorAll("img")
+
+              imgs.forEach(img => {
+                img.addEventListener("mouseenter", () => {
+                  const ts = parseFloat(img.dataset.timestamp)
+                  const seg = segments.find(s => ts >= s.start && ts < s.end)
+                    || segments.reduce((closest, s) =>
+                      Math.abs(s.start - ts) < Math.abs(closest.start - ts) ? s : closest
+                    , segments[0])
+
+                  if (seg) {
+                    const mins = String(Math.floor(ts / 60)).padStart(2, "0")
+                    const secs = String(Math.floor(ts % 60)).padStart(2, "0")
+                    caption.innerHTML = `<span class="font-mono text-xs text-gray-400">${mins}:${secs}</span> <span class="ml-2">${seg.text}</span>`
+                  }
+                })
+              })
+
+              this.el.addEventListener("mouseleave", () => {
+                caption.innerHTML = `<span class="text-gray-400">Hover the filmstrip to see transcript at that moment</span>`
+              })
+            }
+          }
+        </script>
 
         <form phx-change="filter" class="mb-6" id="transcript-filter-form">
           <input
