@@ -80,6 +80,10 @@ config :phoenix, :stacktrace_depth, 20
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
 
+# Whisper ML serving
+config :archive_classifier, start_whisper: true
+config :archive_classifier, whisper_model: "openai/whisper-small"
+
 config :phoenix_live_view,
   # Include debug annotations and locations in rendered markup.
   # Changing this configuration will require mix clean and a full recompile.

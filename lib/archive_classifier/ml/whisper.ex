@@ -9,7 +9,15 @@ defmodule ArchiveClassifier.ML.Whisper do
   @type chunk :: %{text: String.t(), start_timestamp_seconds: float(), end_timestamp_seconds: float()}
   @type transcription :: %{chunks: [chunk()]}
 
-  @model_repo "openai/whisper-small"
+  @default_model "openai/whisper-small"
+
+  @doc """
+  Returns the configured model repo, falling back to `"openai/whisper-small"`.
+  """
+  @spec model_repo() :: String.t()
+  def model_repo do
+    Application.get_env(:archive_classifier, :whisper_model, @default_model)
+  end
 
   @doc """
   Returns the child spec for the Whisper Nx.Serving.
@@ -17,11 +25,11 @@ defmodule ArchiveClassifier.ML.Whisper do
   """
   @spec child_spec(keyword()) :: Supervisor.child_spec()
   def child_spec(opts \\ []) do
-    model_repo = Keyword.get(opts, :model, @model_repo)
+    repo = Keyword.get(opts, :model, model_repo())
 
     %{
       id: __MODULE__,
-      start: {__MODULE__, :start_link, [model_repo]},
+      start: {__MODULE__, :start_link, [repo]},
       type: :worker
     }
   end
@@ -30,11 +38,11 @@ defmodule ArchiveClassifier.ML.Whisper do
   Starts the Whisper serving process.
   """
   @spec start_link(String.t()) :: {:ok, pid()} | {:error, term()}
-  def start_link(model_repo \\ @model_repo) do
-    {:ok, model_info} = Bumblebee.load_model({:hf, model_repo})
-    {:ok, featurizer} = Bumblebee.load_featurizer({:hf, model_repo})
-    {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, model_repo})
-    {:ok, generation_config} = Bumblebee.load_generation_config({:hf, model_repo})
+  def start_link(repo \\ model_repo()) do
+    {:ok, model_info} = Bumblebee.load_model({:hf, repo})
+    {:ok, featurizer} = Bumblebee.load_featurizer({:hf, repo})
+    {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, repo})
+    {:ok, generation_config} = Bumblebee.load_generation_config({:hf, repo})
 
     serving =
       Bumblebee.Audio.speech_to_text_whisper(

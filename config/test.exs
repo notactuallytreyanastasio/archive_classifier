@@ -20,6 +20,10 @@ config :archive_classifier, ArchiveClassifierWeb.Endpoint,
   secret_key_base: "T2Oxic5kIXQpW8nSy6CTpbqrn1Z1qJ1bIkApxeFH7Vtx+5+DML4NnUvUO91jLTKY",
   server: false
 
+# Whisper ML serving — disabled by default in test to avoid loading large models
+config :archive_classifier, start_whisper: false
+config :archive_classifier, whisper_model: "openai/whisper-tiny"
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 
