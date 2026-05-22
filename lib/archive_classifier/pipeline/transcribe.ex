@@ -88,16 +88,19 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
     now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 
     entries =
-      Enum.map(chunks, fn chunk ->
+      chunks
+      |> Enum.reject(&hallucination?/1)
+      |> Enum.map(fn chunk ->
         %{
           video_id: video.id,
           start_time: chunk.start_timestamp_seconds,
           end_time: chunk.end_timestamp_seconds,
-          text: chunk.text,
+          text: String.trim(chunk.text),
           inserted_at: now,
           updated_at: now
         }
       end)
+      |> Enum.reject(fn entry -> entry.text == "" end)
 
     {_count, transcripts} =
       Repo.insert_all(Transcript, entries, returning: true)
@@ -129,6 +132,32 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
         # Frames are nice-to-have — don't fail the whole pipeline
         Logger.warning("Frame extraction failed for #{video.archive_id}: #{reason}")
         :ok
+    end
+  end
+
+  # Whisper-small hallucinates on silence: repeated Unicode chars, single punctuation, etc.
+  defp hallucination?(chunk) do
+    text = String.trim(chunk.text)
+
+    cond do
+      # Empty or just punctuation
+      String.length(text) < 2 -> true
+      # Repeated non-ASCII characters (Georgian, Arabic, etc.)
+      Regex.match?(~r/^[\P{Latin}\P{Common}]{10,}$/u, text) -> true
+      # Same word repeated 5+ times
+      repeated_word?(text) -> true
+      true -> false
+    end
+  end
+
+  defp repeated_word?(text) do
+    words = String.split(text)
+
+    if length(words) >= 5 do
+      unique = words |> Enum.uniq() |> length()
+      unique <= 2
+    else
+      false
     end
   end
 
