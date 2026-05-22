@@ -66,6 +66,11 @@ defmodule ArchiveClassifierWeb.CatalogLive do
   @impl true
   def handle_event("classify", %{"id" => id}, socket) do
     video_id = String.to_integer(id)
+
+    # Fire the pipeline in a background task so the UI stays responsive
+    Task.start(fn -> ArchiveClassifier.Pipeline.Transcribe.run(video_id) end)
+
+    # Immediately mark as queued in cache for UI feedback
     video = Archive.get_video!(video_id)
 
     case Archive.queue_for_classification(video) do
@@ -75,7 +80,8 @@ defmodule ArchiveClassifierWeb.CatalogLive do
         {:noreply,
          socket
          |> assign(:stats, Cache.stats())
-         |> assign_videos()}
+         |> assign_videos()
+         |> put_flash(:info, "Transcription started for #{String.trim(video.title)}")}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to queue video.")}

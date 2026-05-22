@@ -70,8 +70,8 @@ config :archive_classifier, ArchiveClassifierWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :archive_classifier, dev_routes: true
 
-# Do not include metadata nor timestamps in development logs
-config :logger, :default_formatter, format: "[$level] $message\n"
+# Include timestamps in development logs so we can see ML timing
+config :logger, :default_formatter, format: "$time [$level] $message\n"
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
