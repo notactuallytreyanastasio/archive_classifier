@@ -6,6 +6,8 @@ defmodule ArchiveClassifier.ML.Whisper do
   timestamped transcription chunks.
   """
 
+  require Logger
+
   @type chunk :: %{text: String.t(), start_timestamp_seconds: float(), end_timestamp_seconds: float()}
   @type transcription :: %{chunks: [chunk()]}
 
@@ -39,20 +41,26 @@ defmodule ArchiveClassifier.ML.Whisper do
   """
   @spec start_link(String.t()) :: {:ok, pid()} | {:error, term()}
   def start_link(repo \\ model_repo()) do
-    {:ok, model_info} = Bumblebee.load_model({:hf, repo})
-    {:ok, featurizer} = Bumblebee.load_featurizer({:hf, repo})
-    {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, repo})
-    {:ok, generation_config} = Bumblebee.load_generation_config({:hf, repo})
+    Logger.info("Loading Whisper model: #{repo}")
 
-    serving =
-      Bumblebee.Audio.speech_to_text_whisper(
-        model_info,
-        featurizer,
-        tokenizer,
-        generation_config,
-        defn_options: [compiler: EXLA],
-        timestamps: :segments
-      )
+    {time_us, serving} =
+      :timer.tc(fn ->
+        {:ok, model_info} = Bumblebee.load_model({:hf, repo})
+        {:ok, featurizer} = Bumblebee.load_featurizer({:hf, repo})
+        {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, repo})
+        {:ok, generation_config} = Bumblebee.load_generation_config({:hf, repo})
+
+        Bumblebee.Audio.speech_to_text_whisper(
+          model_info,
+          featurizer,
+          tokenizer,
+          generation_config,
+          defn_options: [compiler: EXLA],
+          timestamps: :segments
+        )
+      end)
+
+    Logger.info("Whisper model loaded in #{div(time_us, 1_000_000)}s")
 
     Nx.Serving.start_link(serving: serving, name: __MODULE__, batch_timeout: 100)
   end
@@ -63,7 +71,13 @@ defmodule ArchiveClassifier.ML.Whisper do
   """
   @spec transcribe(String.t()) :: {:ok, transcription()} | {:error, term()}
   def transcribe(audio_path) do
-    result = Nx.Serving.batched_run(__MODULE__, {:file, audio_path})
+    Logger.info("Transcribing: #{Path.basename(audio_path)}")
+
+    {time_us, result} = :timer.tc(fn -> Nx.Serving.batched_run(__MODULE__, {:file, audio_path}) end)
+    chunk_count = length(Map.get(result, :chunks, []))
+
+    Logger.info("Transcription complete: #{chunk_count} segments in #{div(time_us, 1_000_000)}s")
+
     {:ok, result}
   rescue
     error -> {:error, error}

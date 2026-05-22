@@ -12,6 +12,7 @@ defmodule ArchiveClassifier.Cache do
   alias ArchiveClassifier.Repo
 
   import Ecto.Query
+  require Logger
 
   @table __MODULE__
 
@@ -130,11 +131,16 @@ defmodule ArchiveClassifier.Cache do
   end
 
   defp load_all(table) do
-    Video
-    |> order_by([v], asc: v.duration)
-    |> Repo.all()
-    |> Enum.each(fn video ->
-      :ets.insert(table, {video.id, video})
-    end)
+    {time_us, videos} =
+      :timer.tc(fn ->
+        Video
+        |> order_by([v], asc: v.duration)
+        |> Repo.all()
+      end)
+
+    entries = Enum.map(videos, fn video -> {video.id, video} end)
+    :ets.insert(table, entries)
+
+    Logger.info("Cache loaded #{length(videos)} videos in #{div(time_us, 1000)}ms")
   end
 end
