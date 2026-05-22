@@ -17,6 +17,7 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
   alias ArchiveClassifier.Archive
   alias ArchiveClassifier.Classification.Transcript
   alias ArchiveClassifier.Classification.VideoFrame
+  alias ArchiveClassifier.Pipeline.Dedup
   alias ArchiveClassifier.Repo
 
   @impl true
@@ -28,6 +29,7 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
       |> where([t], t.video_id == ^video.id)
       |> order_by([t], asc: t.start_time)
       |> Repo.all()
+      |> Dedup.merge_consecutive()
 
     frames =
       VideoFrame
@@ -70,10 +72,10 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
-      <div class="max-w-5xl mx-auto px-4 py-6">
-        <div class="mb-4">
-          <a href="/" class="text-sm text-blue-600 hover:text-blue-800">&larr; Back to catalog</a>
+    <Layouts.app flash={@flash} page_title={String.trim(@video.title)}>
+      <div class="os-content-padded" style="background: #ddd;">
+        <div style="margin-bottom: 8px;">
+          <a href="/" class="mac-link" style="font-size: 11px;">&larr; Back to catalog</a>
         </div>
 
         <%!-- Video explorer --%>
@@ -86,16 +88,17 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
           data-duration={@video.duration || 0}
         >
           <%!-- Frame viewer --%>
-          <div class="relative bg-black rounded-lg overflow-hidden cursor-crosshair" id="frame-container">
+          <div style="position: relative; background: #000; border: 2px inset #fff; overflow: hidden; cursor: crosshair;" id="frame-container">
             <img
               :if={@frames != []}
               id="explorer-frame"
               src={"/frames/#{List.first(@frames).id}"}
-              class="w-full h-auto max-h-[420px] object-contain mx-auto"
+              style="width: 100%; height: auto; max-height: 420px; object-fit: contain; margin: 0 auto; display: block;"
             />
             <div
               :if={@frames == []}
-              class="w-full h-64 flex items-center justify-center text-gray-500"
+              class="mac-empty"
+              style="height: 200px; display: flex; align-items: center; justify-content: center; color: #999;"
             >
               No frames extracted yet
             </div>
@@ -104,16 +107,18 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
           <%!-- Caption --%>
           <div
             id="explorer-caption"
-            class="mt-2 px-2 py-3 bg-gray-900 text-white text-center rounded-lg min-h-[3rem] flex items-center justify-center"
+            class="mac-info-box"
+            style="margin-top: 4px; text-align: center; min-height: 2.5rem; display: flex; align-items: center; justify-content: center;"
           >
-            <span class="text-gray-500 text-sm">Hover the frame or drag the slider to explore</span>
+            <span class="mac-subtext">Hover the frame or drag the slider to explore</span>
           </div>
 
           <%!-- Timeline slider --%>
-          <div class="mt-3 flex items-center gap-3">
+          <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
             <span
               id="explorer-time"
-              class="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded w-16 text-center shrink-0"
+              class="mac-timestamp"
+              style="width: 52px; text-align: center; flex-shrink: 0;"
             >
               00:00
             </span>
@@ -124,57 +129,57 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
               max={@video.duration || 0}
               step="0.5"
               value="0"
-              class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              class="mac-slider"
+              style="flex: 1;"
             />
-            <span class="text-xs text-gray-400 shrink-0">
+            <span class="mac-subtext" style="flex-shrink: 0;">
               {format_duration(@video.duration)}
             </span>
           </div>
         </div>
 
         <%!-- Search + transcript --%>
-        <div class="mt-6">
-          <form phx-change="filter" class="mb-4" id="transcript-filter-form">
+        <div style="margin-top: 12px;">
+          <form phx-change="filter" style="margin-bottom: 8px;" id="transcript-filter-form">
             <input
               type="text"
               name="q"
               value={@query}
               placeholder="Search spoken words..."
               phx-debounce="300"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="mac-input"
+              style="width: 100%;"
               id="transcript-filter"
             />
           </form>
 
-          <div :if={@query != "" && @segments == []} class="text-center py-6 text-gray-400 text-sm">
+          <div :if={@query != "" && @segments == []} class="mac-empty" style="padding: 16px;">
             No matches for &ldquo;{@query}&rdquo;
           </div>
 
-          <div :if={@segments == [] && @query == "" && @all_segments == []} class="text-center py-8 text-gray-400">
+          <div :if={@segments == [] && @query == "" && @all_segments == []} class="mac-empty">
             No transcripts yet. Classify this video first.
           </div>
 
-          <div id="transcript-segments" class="space-y-0.5">
+          <div id="transcript-segments" class="mac-scroll-list" style="max-height: 50vh; padding: 0;">
             <button
               :for={segment <- @segments}
               type="button"
               data-start={segment.start_time}
               data-end={segment.end_time}
-              class={[
-                "transcript-segment w-full text-left flex items-start gap-3 px-3 py-2 rounded",
-                "hover:bg-blue-50 transition-colors cursor-pointer"
-              ]}
+              class="transcript-segment mac-segment"
+              style="width: 100%; text-align: left; display: flex; align-items: start; gap: 8px; padding: 4px 8px; border: none; background: transparent;"
             >
-              <span class="shrink-0 font-mono text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded mt-0.5 w-14 text-center">
+              <span class="mac-timestamp" style="flex-shrink: 0; margin-top: 2px;">
                 {format_timestamp(segment.start_time)}
               </span>
-              <span class="text-sm text-gray-700 leading-relaxed flex-1">
+              <span class="mac-text" style="flex: 1; line-height: 1.4;">
                 {segment.text}
               </span>
             </button>
           </div>
 
-          <div :if={@query != "" && @segments != []} class="mt-3 text-xs text-gray-400">
+          <div :if={@query != "" && @segments != []} class="mac-subtext" style="margin-top: 4px;">
             {length(@segments)} of {length(@all_segments)} segments
           </div>
         </div>
@@ -251,11 +256,11 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
                   const start = parseFloat(el.dataset.start)
                   const end = parseFloat(el.dataset.end)
                   if (ts >= start && ts < end) {
-                    el.classList.add("bg-blue-100")
-                    el.classList.remove("hover:bg-blue-50")
+                    el.style.background = "#000"
+                    el.style.color = "#fff"
                   } else {
-                    el.classList.remove("bg-blue-100")
-                    el.classList.add("hover:bg-blue-50")
+                    el.style.background = "transparent"
+                    el.style.color = "#000"
                   }
                 })
               }

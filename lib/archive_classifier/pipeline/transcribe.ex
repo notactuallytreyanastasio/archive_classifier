@@ -14,6 +14,7 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
   alias ArchiveClassifier.Media.Audio
   alias ArchiveClassifier.Media.Frames
   alias ArchiveClassifier.ML.Whisper
+  alias ArchiveClassifier.Pipeline.Dedup
   alias ArchiveClassifier.Repo
 
   require Logger
@@ -104,11 +105,12 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
         }
       end)
       |> Enum.reject(fn entry -> entry.text == "" end)
+      |> Dedup.merge_consecutive()
 
     filtered = length(chunks) - length(entries)
 
     if filtered > 0 do
-      Logger.info("Filtered #{filtered} hallucinated segments (#{length(entries)} kept)")
+      Logger.info("[pipeline] Filtered/deduped: #{length(chunks)} raw → #{length(entries)} kept")
     end
 
     {_count, transcripts} =
