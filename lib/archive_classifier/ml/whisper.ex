@@ -63,10 +63,7 @@ defmodule ArchiveClassifier.ML.Whisper do
   """
   @spec transcribe(String.t()) :: {:ok, transcription()} | {:error, term()}
   def transcribe(audio_path) do
-    {:ok, audio_binary} = File.read(audio_path)
-
-    result = Nx.Serving.batched_run(__MODULE__, {:file, audio_binary})
-
+    result = Nx.Serving.batched_run(__MODULE__, {:file, audio_path})
     {:ok, result}
   rescue
     error -> {:error, error}

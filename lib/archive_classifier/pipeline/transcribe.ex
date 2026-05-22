@@ -10,7 +10,7 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
   alias ArchiveClassifier.Archive.Video
   alias ArchiveClassifier.Cache
   alias ArchiveClassifier.Classification.Transcript
-  alias ArchiveClassifier.Media.FFmpeg
+  alias ArchiveClassifier.Media.Audio
   alias ArchiveClassifier.ML.Whisper
   alias ArchiveClassifier.Repo
 
@@ -74,7 +74,7 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
 
   defp extract_audio(video_path, %Video{archive_id: archive_id}) do
     audio_path = Path.join(@tmp_dir, "#{archive_id}.wav")
-    FFmpeg.extract_audio(video_path, audio_path)
+    Audio.extract_audio(video_path, audio_path)
   end
 
   defp transcribe(audio_path) do

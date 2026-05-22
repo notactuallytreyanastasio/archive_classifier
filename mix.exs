@@ -70,6 +70,7 @@ defmodule ArchiveClassifier.MixProject do
       {:gen_stage, "~> 1.2"},
       {:req, "~> 0.5"},
       {:exqlite, "~> 0.36", runtime: false},
+      {:xav, "~> 0.11"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
