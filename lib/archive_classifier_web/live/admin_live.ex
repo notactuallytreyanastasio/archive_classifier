@@ -6,8 +6,11 @@ defmodule ArchiveClassifierWeb.AdminLive do
 
   use ArchiveClassifierWeb, :live_view
 
+  import Ecto.Query
+
   alias ArchiveClassifier.Archive
   alias ArchiveClassifier.Cache
+  alias ArchiveClassifier.Repo
 
   @collections [
     {"all", "All Collections"},
@@ -22,12 +25,15 @@ defmodule ArchiveClassifierWeb.AdminLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket), do: :timer.send_interval(5_000, :refresh_jobs)
+
     {:ok,
      socket
      |> assign(:page_title, "Admin")
      |> assign(:collections, @collections)
      |> assign(:filters, %{search: "", collection: "all", min_duration: "", max_duration: "", status: "pending"})
-     |> assign_matches()}
+     |> assign_matches()
+     |> assign_jobs()}
   end
 
   @impl true
@@ -56,6 +62,11 @@ defmodule ArchiveClassifierWeb.AdminLive do
          |> assign_matches()
          |> put_flash(:info, "Enqueued #{count} videos for transcription.")}
     end
+  end
+
+  @impl true
+  def handle_info(:refresh_jobs, socket) do
+    {:noreply, assign_jobs(socket)}
   end
 
   @impl true
@@ -176,9 +187,83 @@ defmodule ArchiveClassifierWeb.AdminLive do
             </span>
           </div>
         </div>
+        <%!-- Job Queue --%>
+        <div class="mac-card" style="padding: 12px; margin-top: 12px;">
+          <h2 class="mac-header" style="font-size: 13px; margin-bottom: 8px;">
+            Job Queue
+            <span class="mac-subtext" style="font-weight: normal; margin-left: 8px;">
+              auto-refreshes every 5s
+            </span>
+          </h2>
+
+          <div :if={@jobs == []} class="mac-empty" style="padding: 8px;">
+            No jobs in queue.
+          </div>
+
+          <div class="mac-scroll-list" :if={@jobs != []} style="max-height: 30vh; padding: 0;">
+            <div
+              :for={job <- @jobs}
+              style={"display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid #999; background: #{job_bg(job.status)};"}
+            >
+              <span class={"mac-badge #{job_status_class(job.status)}"} style="flex-shrink: 0; width: 70px; text-align: center;">
+                {job.status}
+              </span>
+              <span class="mac-text" style="flex: 1; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {job.module}.{job.function}
+              </span>
+              <span class="mac-subtext" style="flex-shrink: 0;">
+                {if job.started_at, do: "started #{format_ago(job.started_at)}", else: "queued #{format_ago(job.queued_at)}"}
+              </span>
+              <span :if={job.attempts > 0} class="mac-subtext" style="flex-shrink: 0;">
+                attempt {job.attempts}/{job.max_attempts}
+              </span>
+              <span :if={job.error} class="mac-subtext" style="flex-shrink: 0; color: red; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title={job.error}>
+                {String.slice(job.error, 0, 80)}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </Layouts.app>
     """
+  end
+
+  defp assign_jobs(socket) do
+    jobs =
+      from(j in Twerker.Job,
+        order_by: [
+          fragment("CASE status WHEN 'running' THEN 0 WHEN 'queued' THEN 1 WHEN 'failed' THEN 2 ELSE 3 END"),
+          desc: j.inserted_at
+        ],
+        limit: 50
+      )
+      |> Repo.all()
+
+    assign(socket, :jobs, jobs)
+  end
+
+  defp job_bg("running"), do: "#ffffcc"
+  defp job_bg("queued"), do: "#fff"
+  defp job_bg("failed"), do: "#ffcccc"
+  defp job_bg("completed"), do: "#ccffcc"
+  defp job_bg(_), do: "#fff"
+
+  defp job_status_class("running"), do: "mac-badge-warn"
+  defp job_status_class("queued"), do: ""
+  defp job_status_class("completed"), do: "mac-badge-ok"
+  defp job_status_class("failed"), do: "mac-badge-err"
+  defp job_status_class(_), do: ""
+
+  defp format_ago(nil), do: ""
+
+  defp format_ago(dt) do
+    diff = DateTime.diff(DateTime.utc_now(), dt, :second)
+
+    cond do
+      diff < 60 -> "#{diff}s ago"
+      diff < 3600 -> "#{div(diff, 60)}m ago"
+      true -> "#{div(diff, 3600)}h ago"
+    end
   end
 
   defp assign_matches(socket) do
