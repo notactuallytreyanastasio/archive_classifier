@@ -15,6 +15,7 @@ defmodule ArchiveClassifier.Application do
       ] ++
         maybe_whisper() ++
         [
+          ArchiveClassifier.Pipeline.Supervisor,
           {DNSCluster, query: Application.get_env(:archive_classifier, :dns_cluster_query) || :ignore},
           {Phoenix.PubSub, name: ArchiveClassifier.PubSub},
           ArchiveClassifierWeb.Endpoint

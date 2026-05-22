@@ -66,12 +66,10 @@ defmodule ArchiveClassifierWeb.CatalogLive do
   @impl true
   def handle_event("classify", %{"id" => id}, socket) do
     video_id = String.to_integer(id)
-
-    # Fire the pipeline in a background task so the UI stays responsive
-    Task.start(fn -> ArchiveClassifier.Pipeline.Transcribe.run(video_id) end)
-
-    # Immediately mark as queued in cache for UI feedback
     video = Archive.get_video!(video_id)
+
+    # Enqueue in the supervised pipeline
+    ArchiveClassifier.Pipeline.TranscriptionProducer.enqueue(video_id)
 
     case Archive.queue_for_classification(video) do
       {:ok, _updated} ->
