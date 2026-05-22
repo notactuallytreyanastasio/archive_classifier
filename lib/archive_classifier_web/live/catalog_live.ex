@@ -174,7 +174,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
             <div
               :for={video <- @videos}
               id={"video-#{video.id}"}
-              class="bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors overflow-hidden group relative"
+              class="bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors overflow-visible group relative"
             >
               <img
                 src={thumbnail_url(video.archive_id)}
@@ -186,10 +186,10 @@ defmodule ArchiveClassifierWeb.CatalogLive do
                   {String.trim(video.title)}
                 </h3>
                 <div
-                  :if={video.description && String.trim(video.description) != String.trim(video.title)}
-                  class="hidden group-hover:block absolute z-10 left-2 right-2 top-full mt-1 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg leading-relaxed"
+                  :if={video.description && String.trim(video.description || "") != String.trim(video.title)}
+                  class="absolute z-10 left-2 right-2 bottom-full mb-1 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg leading-relaxed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity pointer-events-none"
                 >
-                  {String.trim(video.description)}
+                  {strip_html(video.description)}
                 </div>
                 <p class="text-xs text-gray-500 mt-1">
                   {format_duration(video.duration)}
@@ -301,6 +301,16 @@ defmodule ArchiveClassifierWeb.CatalogLive do
   end
 
   defp format_number(n), do: Integer.to_string(n)
+
+  defp strip_html(nil), do: ""
+
+  defp strip_html(text) do
+    text
+    |> String.replace(~r/<br\s*\/?>/, " ")
+    |> String.replace(~r/<[^>]+>/, "")
+    |> String.replace(~r/\s+/, " ")
+    |> String.trim()
+  end
 
   defp format_collection("markpines"), do: "Mark Pines Collection"
   defp format_collection("mp_ronwood"), do: "Ron Wood"
