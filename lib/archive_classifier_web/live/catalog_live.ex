@@ -25,6 +25,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
      |> assign(:sort, "duration_asc")
      |> assign(:sort_options, @sort_options)
      |> assign(:selected_collection, nil)
+     |> assign(:transcribed_only, true)
      |> assign(:stats, Cache.stats())
      |> assign_collections()
      |> assign_videos()}
@@ -35,6 +36,15 @@ defmodule ArchiveClassifierWeb.CatalogLive do
     {:noreply,
      socket
      |> assign(:search, search)
+     |> assign_collections()
+     |> assign_videos()}
+  end
+
+  @impl true
+  def handle_event("toggle_transcribed", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:transcribed_only, !socket.assigns.transcribed_only)
      |> assign_collections()
      |> assign_videos()}
   end
@@ -160,6 +170,15 @@ defmodule ArchiveClassifierWeb.CatalogLive do
               </option>
             </select>
           </form>
+
+          <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap;" class="mac-text">
+            <input
+              type="checkbox"
+              checked={@transcribed_only}
+              phx-click="toggle_transcribed"
+              id="transcribed-only"
+            /> Transcribed only
+          </label>
         </div>
 
         <%!-- Collection overview --%>
@@ -292,7 +311,7 @@ defmodule ArchiveClassifierWeb.CatalogLive do
   # Assign helpers
 
   defp assign_collections(socket) do
-    videos = filtered_videos(socket.assigns.search)
+    videos = filtered_videos(socket.assigns)
 
     collections =
       videos
@@ -314,16 +333,23 @@ defmodule ArchiveClassifierWeb.CatalogLive do
     assign(socket, :videos, [])
   end
 
-  defp assign_videos(%{assigns: %{selected_collection: col, search: search, sort: sort}} = socket) do
+  defp assign_videos(%{assigns: %{selected_collection: col, sort: sort}} = socket) do
     videos =
-      filtered_videos(search)
+      filtered_videos(socket.assigns)
       |> Enum.filter(&(&1.collection == col))
       |> sort_videos(sort)
 
     assign(socket, :videos, videos)
   end
 
-  defp filtered_videos(search), do: Cache.search(search)
+  defp filtered_videos(%{search: search, transcribed_only: true}) do
+    Cache.search(search)
+    |> Enum.filter(&(&1.classification_status == :classified))
+  end
+
+  defp filtered_videos(%{search: search}) do
+    Cache.search(search)
+  end
 
   defp sort_videos(videos, "duration_asc"), do: Enum.sort_by(videos, & &1.duration)
   defp sort_videos(videos, "duration_desc"), do: Enum.sort_by(videos, & &1.duration, :desc)
