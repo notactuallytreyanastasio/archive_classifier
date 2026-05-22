@@ -17,7 +17,7 @@ defmodule ArchiveClassifierWeb.Router do
   scope "/", ArchiveClassifierWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", CatalogLive
   end
 
   # Other scopes may use custom stacks.
