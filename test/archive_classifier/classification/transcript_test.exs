@@ -18,7 +18,7 @@ defmodule ArchiveClassifier.Classification.TranscriptTest do
     |> Repo.insert!()
   end
 
-  defp insert_transcript!(video, attrs \\ %{}) do
+  defp insert_transcript!(video, attrs) do
     defaults = %{
       video_id: video.id,
       start_time: 0.0,

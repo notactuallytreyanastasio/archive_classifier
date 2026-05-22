@@ -1,6 +1,9 @@
 defmodule ArchiveClassifierWeb.SearchLive do
   @moduledoc """
   Search transcripts by text — find the exact moment in any video.
+
+  All state is encoded in the URL as `?q=<term>`, so search results are fully
+  shareable: copy the URL, paste it, get the same results.
   """
 
   use ArchiveClassifierWeb, :live_view
@@ -21,7 +24,9 @@ defmodule ArchiveClassifierWeb.SearchLive do
   end
 
   @impl true
-  def handle_event("search", %{"query" => query}, socket) do
+  def handle_params(params, _uri, socket) do
+    query = Map.get(params, "q", "")
+
     results =
       if String.length(String.trim(query)) >= 2 do
         search_transcripts(query)
@@ -33,6 +38,11 @@ defmodule ArchiveClassifierWeb.SearchLive do
      socket
      |> assign(:query, query)
      |> assign(:results, results)}
+  end
+
+  @impl true
+  def handle_event("search", %{"q" => query}, socket) do
+    {:noreply, push_patch(socket, to: ~p"/search?#{%{q: query}}")}
   end
 
   @impl true
@@ -50,7 +60,7 @@ defmodule ArchiveClassifierWeb.SearchLive do
         <form phx-change="search" class="mb-8">
           <input
             type="text"
-            name="query"
+            name="q"
             value={@query}
             placeholder="Search transcripts..."
             phx-debounce="300"
