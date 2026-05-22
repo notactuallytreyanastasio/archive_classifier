@@ -102,6 +102,12 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
       end)
       |> Enum.reject(fn entry -> entry.text == "" end)
 
+    filtered = length(chunks) - length(entries)
+
+    if filtered > 0 do
+      Logger.info("Filtered #{filtered} hallucinated segments (#{length(entries)} kept)")
+    end
+
     {_count, transcripts} =
       Repo.insert_all(Transcript, entries, returning: true)
 
@@ -135,18 +141,30 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
     end
   end
 
-  # Whisper-small hallucinates on silence: repeated Unicode chars, single punctuation, etc.
+  # Whisper hallucinates on silence: repeated Unicode chars, single punctuation, etc.
   defp hallucination?(chunk) do
     text = String.trim(chunk.text)
 
     cond do
       # Empty or just punctuation
       String.length(text) < 2 -> true
-      # Repeated non-ASCII characters (Georgian, Arabic, etc.)
-      Regex.match?(~r/^[\P{Latin}\P{Common}]{10,}$/u, text) -> true
+      # Mostly non-Latin script (Georgian ლ, Arabic, etc.) — 50%+ non-ASCII
+      non_ascii_ratio(text) > 0.5 -> true
       # Same word repeated 5+ times
       repeated_word?(text) -> true
       true -> false
+    end
+  end
+
+  defp non_ascii_ratio(text) do
+    chars = String.graphemes(text) |> Enum.reject(&(&1 == " "))
+    total = length(chars)
+
+    if total == 0 do
+      0.0
+    else
+      non_ascii = Enum.count(chars, fn c -> byte_size(c) > 1 end)
+      non_ascii / total
     end
   end
 
