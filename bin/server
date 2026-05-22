@@ -17,5 +17,6 @@ echo "Logs: logs/server.log"
 echo ""
 
 # Run the server, tee to both stdout and log file
+# script -q forces a pseudo-terminal so Elixir emits ANSI colors even when piped
 PKG_CONFIG_PATH="/opt/homebrew/opt/ffmpeg@7/lib/pkgconfig:${PKG_CONFIG_PATH:-}" \
-  mix phx.server 2>&1 | tee logs/server.log
+  script -q /dev/null mix phx.server 2>&1 | tee logs/server.log
