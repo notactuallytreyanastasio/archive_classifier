@@ -18,6 +18,7 @@ defmodule ArchiveClassifierWeb.Router do
     pipe_through :browser
 
     live "/", CatalogLive
+    live "/search", SearchLive
   end
 
   # Other scopes may use custom stacks.
