@@ -51,13 +51,8 @@ defmodule ArchiveClassifier.Cache do
   def search(nil), do: all_videos()
 
   def search(term) do
-    downcased = String.downcase(term)
-
-    all_videos()
-    |> Enum.filter(fn video ->
-      String.contains?(String.downcase(video.title || ""), downcased) or
-        String.contains?(String.downcase(video.description || ""), downcased)
-    end)
+    # Use Postgres FTS to search across titles, descriptions, AND transcript content
+    ArchiveClassifier.Archive.search_videos_fts(term)
   end
 
   @doc """

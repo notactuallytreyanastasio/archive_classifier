@@ -128,6 +128,51 @@ defmodule ArchiveClassifier.Archive do
     count
   end
 
+  @doc """
+  Full-text search across video titles, descriptions, AND transcript content.
+  Returns videos that match in either their metadata or their transcripts.
+  """
+  @spec search_videos_fts(String.t()) :: [Video.t()]
+  def search_videos_fts(""), do: []
+  def search_videos_fts(nil), do: []
+
+  def search_videos_fts(query) do
+    tsquery = to_tsquery(query)
+
+    # Videos matching in title/description
+    video_ids_from_metadata =
+      from(v in Video,
+        where: fragment("? @@ to_tsquery('english', ?)", v.search_vector, ^tsquery),
+        select: v.id
+      )
+      |> Repo.all()
+
+    # Videos matching in transcript content
+    video_ids_from_transcripts =
+      from(t in ArchiveClassifier.Classification.Transcript,
+        where: fragment("? @@ to_tsquery('english', ?)", t.search_vector, ^tsquery),
+        select: t.video_id,
+        distinct: true
+      )
+      |> Repo.all()
+
+    all_ids = Enum.uniq(video_ids_from_metadata ++ video_ids_from_transcripts)
+
+    case all_ids do
+      [] -> []
+      ids -> from(v in Video, where: v.id in ^ids, order_by: [asc: v.duration]) |> Repo.all()
+    end
+  end
+
+  # Convert user search to tsquery format: "ron wood guitar" → "ron & wood & guitar"
+  defp to_tsquery(query) do
+    query
+    |> String.trim()
+    |> String.split(~r/\s+/)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join(" & ")
+  end
+
   defp apply_collection(query, nil), do: query
   defp apply_collection(query, ""), do: query
   defp apply_collection(query, "all"), do: query
