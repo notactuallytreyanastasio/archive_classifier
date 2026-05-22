@@ -75,7 +75,8 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
              receive_timeout: :timer.minutes(30),
              pool_timeout: :timer.minutes(5),
              retry: :transient,
-             max_retries: 3
+             max_retries: 5,
+             retry_delay: &exponential_backoff/1
            ) do
         {:ok, %{status: 200}} -> {:ok, output_path}
         {:ok, %{status: status}} -> {:error, "Download failed with status #{status}"}
@@ -84,6 +85,13 @@ defmodule ArchiveClassifier.Pipeline.Transcribe do
           {:error, "Download failed: #{inspect(reason)}"}
       end
     end
+  end
+
+  # Exponential backoff: 1s, 2s, 4s, 8s, 16s
+  defp exponential_backoff(retry_count) do
+    delay = Integer.pow(2, retry_count) * 1_000
+    Logger.info("[pipeline] Retry ##{retry_count + 1}, backing off #{div(delay, 1000)}s")
+    delay
   end
 
   defp extract_audio(video_path, %Video{archive_id: archive_id}) do
