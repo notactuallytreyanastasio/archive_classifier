@@ -276,14 +276,25 @@ defmodule ArchiveClassifierWeb.TranscriptSearchLive do
                 update(parseFloat(e.target.value))
               })
 
-              // Frame hover → scrub through frames by mouse position
-              frameContainer.addEventListener("mousemove", (e) => {
+              // Frame click+drag → scrub through frames by mouse position
+              let isDragging = false
+              frameContainer.addEventListener("mousedown", (e) => {
+                isDragging = true
                 const rect = frameContainer.getBoundingClientRect()
                 const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
                 const ts = pct * duration
                 update(ts)
                 slider.value = ts
               })
+              frameContainer.addEventListener("mousemove", (e) => {
+                if (!isDragging) return
+                const rect = frameContainer.getBoundingClientRect()
+                const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+                const ts = pct * duration
+                update(ts)
+                slider.value = ts
+              })
+              document.addEventListener("mouseup", () => { isDragging = false })
 
               // Transcript segment click → jump to that time
               document.getElementById("transcript-segments")?.addEventListener("click", (e) => {
